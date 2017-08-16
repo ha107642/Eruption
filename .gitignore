@@ -1,0 +1,9 @@
+Release/
+Debug/
+.vs/
+Eruption.VC.db
+Eruption.VC.VC.opendb
+x64/
+Eruption/Debug/
+Eruption/Release/
+Eruption/x64
