@@ -17,4 +17,7 @@ private:
 	float gravity = .982f;
 public:
 	void update(Hitbox* const component, Entity entity, Time& time) override;
+	void set_axis(glm::vec3 collision_data, Velocity* velocity);
+	void update(Time& time) override;
+	bool resolve_collision(Component_Holder<Hitbox>& h1, Component_Holder<Hitbox>& h2, glm::vec3* collision_data);
 };

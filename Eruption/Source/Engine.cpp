@@ -67,6 +67,7 @@ void init_some_stuff(Engine& engine, Transform_System &movement, Renderer &rende
 
 	hr = engine.add_component<Render>(house);
 	hr->transform = movement.get_component_reference(house);
+	hr->transform->position.z = 10.f;
 	if (model) hr->model = model;
 
 	Velocity* hv = engine.add_component<Velocity>(house);
@@ -75,6 +76,7 @@ void init_some_stuff(Engine& engine, Transform_System &movement, Renderer &rende
 	hv->transform = get_component_reference<Transform>(house);
 
 	Hitbox* hb = add_component<Hitbox>(house);
+	hb->half_size = glm::vec3(1.f, 1.f, 1.f);
 	hb->velocity = get_component_reference<Velocity>(house);
 
 	house2 = engine.new_entity();
@@ -112,6 +114,9 @@ void init_some_stuff(Engine& engine, Transform_System &movement, Renderer &rende
 	gr->transform = get_component_reference<Transform>(ground);
 	gr->model = new Model();
 	gr->model->name = "ground_zx";
+
+	Hitbox* hb2 = add_component<Hitbox>(ground);
+	hb2->half_size = glm::vec3(100.f, 100.f, 1.f);
 }
 
 void do_some_stuff(Engine& engine, Transform_System &movement, Renderer &renderer, Time &time, Graphics *graphics = nullptr) {
