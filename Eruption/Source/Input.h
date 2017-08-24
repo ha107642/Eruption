@@ -3,7 +3,7 @@
 #include "System.h"
 #include "Systems/Camera.h"
 
-#include <GLFW\glfw3.h>
+#include <GLFW/glfw3.h>
 
 //extern void key_pressed(GLFWwindow* window, int key, int scancode, int action, int mods);
 extern void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
