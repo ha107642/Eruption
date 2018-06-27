@@ -25,8 +25,14 @@ struct Transform_Matrix {
 	glm::mat4 model;
 };
 
+enum Render_Type {
+	RENDER_TYPE_TEXTURE = 0,
+	RENDER_TYPE_WIREFRAME = 1
+};
+
 struct Render_Data {
 	Model* model;
+	Render_Type type;
 	//int offset;
 	//texture?
 };
@@ -36,7 +42,7 @@ private:
 	friend class Buffer;
 
 	bool _is_initialized;
-	
+
 	std::vector<Model*> models; //TODO: Make contiguous (if needed?).
 	Camera* camera;
 
@@ -60,11 +66,13 @@ private:
 	std::vector<VkImage> images;
 	std::vector<VkImageView> image_views;
 	VkRenderPass render_pass;
+	VkRenderPass render_pass_wireframe;
 	//VkDescriptorSetLayout descriptor_set_layout;
 	VkDescriptorSet descriptor_set;
 	VkDescriptorPool descriptor_pool;
 	VkPipelineLayout pipeline_layout;
 	VkPipeline pipeline;
+	VkPipeline pipeline_wireframe;
 	std::vector<VkFramebuffer> frame_buffers;
 	VkCommandPool graphics_command_pool;
 	VkCommandPool transfer_command_pool;

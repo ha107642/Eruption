@@ -28,4 +28,5 @@ public:
 
 	static Model load_obj(const char* file_name);
 	static Model load_binary(const char* file_name);
+	static Model load_wireframe(glm::vec3 position, glm::vec3 half_size);
 };

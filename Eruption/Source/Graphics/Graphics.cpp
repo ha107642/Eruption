@@ -151,6 +151,7 @@ void Graphics::initialize(Engine *engine) {
 		}
 
 		VkPhysicalDeviceFeatures features = {};
+		features.fillModeNonSolid = VK_TRUE; //Allows for wireframe drawing.
 
 		std::vector<const char*> layers;
 		get_validation_layers(&layers);
@@ -549,6 +550,10 @@ void Graphics::initalize_command_buffers() {
 	}
 }
 
+//FIXME: TEMP
+#include "../Systems/Physics.h"
+#include "../Aligned_Array.h"
+
 void Graphics::update_command_buffers(const std::vector<Render_Data> render_data) {
 	for (size_t i = 0; i < command_buffers.size(); ++i) {
 		//"If a command buffer is in the executable state and the command buffer was allocated from a command pool with the 
@@ -593,7 +598,10 @@ void Graphics::update_command_buffers(const std::vector<Render_Data> render_data
 		vkCmdBindIndexBuffer(command_buffers[i], index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
 		for (uint32_t j = 0; j < render_data.size(); ++j)
-		{			
+		{
+			if (render_data[j].type != RENDER_TYPE_TEXTURE)
+				continue;
+
 			uint32_t offset = j * dynamic_buffer_alignment;
 			
 			std::vector<VkDescriptorSet> descriptor_sets;
@@ -606,6 +614,42 @@ void Graphics::update_command_buffers(const std::vector<Render_Data> render_data
 		}
 
 		vkCmdEndRenderPass(command_buffers[i]);
+
+		//{ //Draw wireframe stuff.
+		//	render_begin_info.clearValueCount = 0;
+		//	render_begin_info.renderPass = render_pass_wireframe;
+
+		//	vkCmdBeginRenderPass(command_buffers[i], &render_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+
+		//	vkCmdBindPipeline(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_wireframe);
+		//	Aligned_Array<Transform_Matrix> asdf(128);
+		//	System<Hitbox>* sys = engine->get_system<Hitbox>();
+
+		//	VkBuffer vertex_buffers[] = { vertex_buffer.buffer };
+		//	VkDeviceSize offsets[] = { 0 };
+		//	vkCmdBindVertexBuffers(command_buffers[i], 0, 1, vertex_buffers, offsets);
+		//	vkCmdBindIndexBuffer(command_buffers[i], index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+		//	int temp = 0;
+		//	for (uint32_t j = 0; j < render_data.size(); ++j) {
+		//		if (render_data[j].type != RENDER_TYPE_WIREFRAME) {
+		//			temp++;
+		//			continue;
+		//		}
+		//		 
+		//		uint32_t offset = (j - temp) * dynamic_buffer_alignment;
+
+		//		std::vector<VkDescriptorSet> descriptor_sets;
+		//		descriptor_sets.push_back(descriptor_set);
+		//		if (render_data[j].model->texture_descriptor_set != VK_NULL_HANDLE)
+		//			descriptor_sets.push_back(render_data[j].model->texture_descriptor_set);
+
+		//		vkCmdBindDescriptorSets(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, descriptor_sets.size(), descriptor_sets.data(), 1, &offset);
+		//		vkCmdDrawIndexed(command_buffers[i], render_data[j].model->indices.size(), 1, render_data[j].model->index_offset, render_data[j].model->vertex_offset, 0);
+		//	}
+
+		//	vkCmdEndRenderPass(command_buffers[i]);
+		//}
 
 		if (vkEndCommandBuffer(command_buffers[i]) != VK_SUCCESS) {
 			Engine::fail("Unable to end recording command buffer");
@@ -1104,6 +1148,16 @@ void Graphics::initialize_render_pass() {
 	if (vkCreateRenderPass(device, &create_info, nullptr, &render_pass) != VK_SUCCESS) {
 		Engine::fail("Unable to create render pass");
 	}
+
+	color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD; //Clear before every pass.
+	depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+	attachments[0] = color_attachment;
+	attachments[1] = depth_attachment;
+	create_info.pAttachments = attachments;
+
+	if (vkCreateRenderPass(device, &create_info, nullptr, &render_pass_wireframe) != VK_SUCCESS) {
+		Engine::fail("Unable to create render pass");
+	}
 }
 
 void Graphics::initialize_descriptor_set_layout() {
@@ -1327,8 +1381,17 @@ void Graphics::initialize_pipeline() {
 		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &create_info, nullptr, &pipeline) != VK_SUCCESS) {
 			Engine::fail("Unable to create graphics pipeline(s)");
 		}
-	}
 
+		// Wire frame rendering pipeline
+		rasterizer.cullMode = VK_CULL_MODE_NONE;
+		rasterizer.polygonMode = VK_POLYGON_MODE_LINE;
+		rasterizer.lineWidth = 1.0f;
+
+		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &create_info, nullptr, &pipeline_wireframe) != VK_SUCCESS) {
+			Engine::fail("Unable to create graphics wireframe pipeline");
+		}
+
+	}
 	if (vertex_shader) vkDestroyShaderModule(device, vertex_shader, nullptr);
 	if (fragment_shader) vkDestroyShaderModule(device, fragment_shader, nullptr);
 }
@@ -1337,6 +1400,10 @@ bool Graphics::is_device_compatible(VkPhysicalDevice device) {
 	VkPhysicalDeviceFeatures features;
 	vkGetPhysicalDeviceProperties(device, &properties);
 	vkGetPhysicalDeviceFeatures(device, &features);
+
+	//We need this to draw wireframe. Only really needed for debugging though.
+	if (features.fillModeNonSolid == VK_FALSE)
+		return false;
 
 	if (properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU || !features.geometryShader 
 		|| properties.limits.maxPushConstantsSize < sizeof(Transform_Matrix))

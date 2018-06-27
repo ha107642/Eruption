@@ -1,6 +1,7 @@
 #include "Input.h"
 
-#include  "Engine.h"
+#include "Engine.h"
+#include "Systems/Renderer.h"
 
 void Input::update() {
 	glfwPollEvents();
@@ -13,6 +14,14 @@ void Input::update() {
 		if (is_down(GLFW_KEY_S)) velocity.y -= pan_speed;
 		if (is_down(GLFW_KEY_D)) velocity.x += pan_speed;
 		if (is_down(GLFW_KEY_A)) velocity.x -= pan_speed;
+		static bool f_down = false; //TODO: make this better...
+		if (is_down(GLFW_KEY_F)) {
+			if (!f_down)
+				((Renderer*)engine->get_system<Render>())->toggle_wireframe();
+			f_down = true;
+		} else {
+			f_down = false;
+		}
 
 		camera->velocity->linear = velocity;
 	}

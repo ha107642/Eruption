@@ -14,7 +14,6 @@ extern thread_local Engine *engine;
 
 class Engine {
 private:
-	Graphics graphics;
 	std::unordered_map<Entity, std::vector<ISystem*> > entity_components;
 	std::atomic<Entity> last_entity = 0;
 	std::vector<ISystem*> systems;
@@ -25,6 +24,7 @@ private:
 public:
 	Time time;
 	Input input;
+	Graphics graphics;
 
 	Engine() { engine = this; }
 

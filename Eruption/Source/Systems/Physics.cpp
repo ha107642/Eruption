@@ -58,6 +58,10 @@ void Physics::update(Time & time) {
 	}
 }
 
+std::vector<Component_Holder<Hitbox>> Physics::get_hitboxes() {
+	return components;
+}
+
 bool Physics::resolve_collision(Component_Holder<Hitbox>& h1, Component_Holder<Hitbox>& h2, glm::vec3* collision_data) {
 	if (h1.entity == h2.entity)
 		return false;

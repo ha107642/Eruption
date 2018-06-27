@@ -10,6 +10,7 @@
 #include "Memory_Stream.h"
 #include "io.h"
 #include "Engine.h"
+#include "Physics.h"
 
 void Renderer::update(Render * const render, Transform_Matrix * transform, Entity entity, Time& time) {
 	Transform* t = render->transform.get();
@@ -21,14 +22,35 @@ void Renderer::update(Render * const render, Transform_Matrix * transform, Entit
 
 void Renderer::update_offsets() {
 	int size = components.size();
-	std::vector<Render_Data> render_data(components.size());
-	for (int i = 0; i < size; ++i) {
+	if (wireframe_enabled) {
+		Physics* physics_system = (Physics*)engine->get_system<Hitbox>();
+		std::vector<Component_Holder<Hitbox>> hitboxes = physics_system->get_hitboxes();
+		size += hitboxes.size();
+	}
+	std::vector<Render_Data> render_data(size);
+	for (int i = 0; i < components.size(); ++i) {
 		//render_data[i].offset = i * sizeof(Transform_Matrix);
 		render_data[i].model = components[i].component.model;
 	}
 
+	if (wireframe_enabled) {
+		Physics* physics_system = (Physics*)engine->get_system<Hitbox>();
+		std::vector<Component_Holder<Hitbox>> hitboxes = physics_system->get_hitboxes();
+		for (int i = 0; i < hitboxes.size(); ++i) {
+			Model model = Model::load_wireframe(hitboxes[i].component.position, hitboxes[i].component.half_size);
+			Model* m = new Model(model); //FIX: MEMORY LEAK!
+			render_data[components.size() + i].model = m;
+			render_data[components.size() + i].type = RENDER_TYPE_WIREFRAME;
+		}
+	}
+
 	graphics->update_command_buffers(render_data);
 	update_command_buffers = false;
+}
+
+void Renderer::toggle_wireframe() {
+	wireframe_enabled = !wireframe_enabled;
+	update_offsets();
 }
 
 Render * Renderer::add_component(Entity entity) {

@@ -19,6 +19,7 @@ protected:
 	Aligned_Array<Transform_Matrix> transforms;
 	bool update_command_buffers;
 	std::vector<Model*> models;
+	bool wireframe_enabled;
 
 	void update(Render* const render, Entity entity, Time& time) {}
 	void update(Render* const render, Transform_Matrix* transform, Entity entity, Time& time);
@@ -43,6 +44,7 @@ public:
 	virtual void deserialize(Memory_Stream &stream, Render* component, Entity entity) override;
 	virtual void set_state(System_State state) override;
 	virtual System_State get_state() override;
+	void toggle_wireframe();
 
 	void update_offsets();
 };
