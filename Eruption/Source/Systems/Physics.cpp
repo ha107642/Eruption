@@ -2,11 +2,8 @@
 
 #include "Engine.h"
 
-void Physics::update(Hitbox * const component, Entity entity, Time & time) {
-	if (!component->velocity.is_initialized())
-		return; //temp... FIX.
-
-	component->velocity->linear.z -= gravity * time.delta_time;
+void Physics::update(Hitbox * const component, Entity entity, Time & time, Velocity& velocity) {
+	velocity.linear.z -= gravity * time.delta_time;
 }
 
 void Physics::set_axis(glm::vec3 collision_data, Velocity* velocity) {
@@ -25,54 +22,54 @@ void Physics::set_axis(glm::vec3 collision_data, Velocity* velocity) {
 }
 
 void Physics::update(Time & time) {
-	System<Hitbox>::update(time);
-
 	int count = components.size();
+	for (int i = 0; i < count; ++i)
+		if (velocities[i])
+			update(&components[i].component, components[i].entity, time, *velocities[i]);
+
 	for (int i = 0; i < count; ++i) {
 		for (int j = i + 1; j < count; ++j) {
 			glm::vec3 collision_data;
-			bool collision = resolve_collision(components[i], components[j], &collision_data);
+			if (components[i].entity == components[j].entity)
+				continue;
+
+			bool collision = resolve_collision(i, j, &collision_data);
 			if (collision) {
 				printf("We have a collision! collision_data: (%f, %f, %f)\n", collision_data.x, collision_data.y, collision_data.z); 
 				
-				if (components[i].component.velocity.is_initialized()) {
-					if (components[j].component.velocity.is_initialized()) {
+				if (velocities[i]) {
+					if (velocities[j]) {
 						//Move both.
-						set_axis(collision_data, components[i].component.velocity.get());
-						set_axis(collision_data, components[j].component.velocity.get());
+						set_axis(collision_data, velocities[i]);
+						set_axis(collision_data, velocities[j]);
 
-						engine->get_component<Transform>(components[i].entity)->position -= collision_data * 0.5f;
-						engine->get_component<Transform>(components[j].entity)->position += collision_data * 0.5f;
+						transforms[i]->position -= collision_data * 0.5f;
+						transforms[j]->position += collision_data * 0.5f;
 					} else {
 						//Move i.
-						set_axis(collision_data, components[i].component.velocity.get());
-						engine->get_component<Transform>(components[i].entity)->position -= collision_data;
+						set_axis(collision_data, velocities[i]);
+						transforms[i]->position -= collision_data;
 					}
-				} else if (components[j].component.velocity.is_initialized()) {
+				} else if (velocities[j]) {
 					//Move j.
-					set_axis(collision_data, components[j].component.velocity.get());
-					engine->get_component<Transform>(components[j].entity)->position -= collision_data;
+					set_axis(collision_data, velocities[j]);
+					transforms[j]->position -= collision_data;
 				}
 			}
 		}
 	}
 }
 
-bool Physics::resolve_collision(Component_Holder<Hitbox>& h1, Component_Holder<Hitbox>& h2, glm::vec3* collision_data) {
-	if (h1.entity == h2.entity)
-		return false;
-
-	//TODO:FIX.
-	Transform* t1 = engine->get_component<Transform>(h1.entity);
-	Transform* t2 = engine->get_component<Transform>(h2.entity);	
-	Hitbox& a = h1.component;
-	Hitbox& b = h2.component;	
+bool Physics::resolve_collision(const int i1, const int i2, glm::vec3* collision_data) {
+	Transform* t1 = transforms[i1];
+	Transform* t2 = transforms[i2];
+	Hitbox& a = components[i1].component;
+	Hitbox& b = components[i2].component;
 
 	glm::vec3 a_pos = a.position + t1->position;
 	glm::vec3 b_pos = b.position + t2->position;
 
 	float values[6];
-
 	values[0] = a_pos.x + a.half_size.x - (b_pos.x - b.half_size.x);
 	values[1] = a_pos.x - a.half_size.x - (b_pos.x + b.half_size.x);
 	values[2] = a_pos.y + a.half_size.y - (b_pos.y - b.half_size.y);
@@ -109,16 +106,6 @@ bool Physics::resolve_collision(Component_Holder<Hitbox>& h1, Component_Holder<H
 
 		return true;
 	}
-
-
-	//if ((value = a_pos.x + a.half_size.x - (b_pos.x - b.half_size.x)) < 0) return false;
-	//if ((value = a_pos.x - a.half_size.x - (b_pos.x + b.half_size.x)) > 0) return false;
-	//if ((value = a_pos.y + a.half_size.y - (b_pos.y - b.half_size.y)) < 0) return false;
-	//if ((value = a_pos.y - a.half_size.y - (b_pos.y + b.half_size.y)) > 0) return false;
-	//if ((value = a_pos.z + a.half_size.z - (b_pos.z - b.half_size.z)) < 0) return false;
-	//if ((value = a_pos.z - a.half_size.z - (b_pos.z + b.half_size.z)) > 0) return false;
-	
-
 
 	return false;
 }

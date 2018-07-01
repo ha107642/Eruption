@@ -17,6 +17,10 @@ struct Velocity {
 };
 
 class Movement : public System<Velocity> {
+private:
+	System_Reference<Velocity, Transform> transforms;
+	
+	void update(Velocity* const v, Entity entity, Time& time, Transform& transform);
 public:
 	Movement() : transforms(*this) {}
 
@@ -24,8 +28,4 @@ public:
 	void serialize(Memory_Stream &stream, Velocity& component, Entity entity) override;
 	void deserialize(Memory_Stream &stream, Velocity* component, Entity entity) override;
 	bool are_components_equal(Velocity * a, Velocity * b) override;
-private:
-	System_Reference<Velocity, Transform> transforms;
-	
-	void update(Velocity* const v, Entity entity, Time& time, Transform& transform);
 };

@@ -76,7 +76,6 @@ void init_some_stuff(Engine& engine, Transform_System &movement, Renderer &rende
 
 	Hitbox* hb = add_component<Hitbox>(house);
 	hb->half_size = glm::vec3(1.f, 1.f, 1.f);
-	hb->velocity = get_component_reference<Velocity>(house);
 
 	house2 = engine.new_entity();
 	ht = engine.add_component<Transform>(house2);
@@ -332,7 +331,6 @@ void Engine::run_server(bool *should_exit) {
 	add_component<Transform>(main_camera);
 	Velocity* v = add_component<Velocity>(main_camera);
 	Camera* c = add_component<Camera>(main_camera);
-	c->velocity = get_component_reference<Velocity>(main_camera);
 	c->target_zoom = 5.0f;
 	graphics.set_main_camera(c);
 

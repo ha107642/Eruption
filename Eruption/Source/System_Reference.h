@@ -85,8 +85,6 @@ protected:
 		}
 	}
 public:
-	System_Reference() : System_Reference(*engine->get_system<T>()) { }
-
 	System_Reference(System<T>& base_system) : system(base_system) {
 		system.add_system_reference(this);
 	}

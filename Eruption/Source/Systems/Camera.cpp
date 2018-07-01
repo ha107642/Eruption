@@ -30,8 +30,6 @@ void Camera_System::serialize(Memory_Stream & stream, Camera & component, Entity
 
 void Camera_System::deserialize(Memory_Stream & stream, Camera * component, Entity entity) {
 	read(stream, &component->zoom);
-	if (!component->velocity.is_initialized())
-		component->velocity = engine->get_component_reference<Velocity>(entity);
 }
 
 bool Camera_System::are_components_equal(Camera * a, Camera * b) {

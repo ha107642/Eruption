@@ -62,7 +62,7 @@ public:
 		auto it = map.find(entity); 
 		if (it == map.end())
 			return -1;
-		return it->first;
+		return it->second;
 	}
 
 	Entity get_entity(const T* component) {
