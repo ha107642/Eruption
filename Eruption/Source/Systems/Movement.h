@@ -2,6 +2,7 @@
 
 #include "System.h"
 #include "Transform_System.h"
+#include "../System_Reference.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -13,13 +14,18 @@ struct Velocity {
 	//float angular;
 	//glm::vec3 axis = { 0.f, 0.0f, 1.f };
 	//glm::quat angular = { 1.0f, 0.f, 0.f, 0.f };
-
-	Component_Reference<Transform> transform;
 };
 
 class Movement : public System<Velocity> {
-	void update(Velocity* const v, Entity entity, Time& time) override;
+public:
+	Movement() : transforms(*this) {}
+
+	void update(Time& time) override;
 	void serialize(Memory_Stream &stream, Velocity& component, Entity entity) override;
 	void deserialize(Memory_Stream &stream, Velocity* component, Entity entity) override;
 	bool are_components_equal(Velocity * a, Velocity * b) override;
+private:
+	System_Reference<Velocity, Transform> transforms;
+	
+	void update(Velocity* const v, Entity entity, Time& time, Transform& transform);
 };

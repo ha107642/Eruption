@@ -73,7 +73,6 @@ void init_some_stuff(Engine& engine, Transform_System &movement, Renderer &rende
 	Velocity* hv = engine.add_component<Velocity>(house);
 	hv->angular.z = 2.f;
 	hv->linear.x = 2.f;
-	hv->transform = get_component_reference<Transform>(house);
 
 	Hitbox* hb = add_component<Hitbox>(house);
 	hb->half_size = glm::vec3(1.f, 1.f, 1.f);
@@ -86,7 +85,6 @@ void init_some_stuff(Engine& engine, Transform_System &movement, Renderer &rende
 
 	hv = engine.add_component<Velocity>(house2);
 	hv->linear.x = 2.f;
-	hv->transform = get_component_reference<Transform>(house2);
 
 	hr = engine.add_component<Render>(house2);
 	hr->transform = movement.get_component_reference(house2);
@@ -274,6 +272,8 @@ void Engine::run_client() {
 	Physics physics;
 	register_system(&physics);
 
+	//System_Reference<Velocity, Transform> test(movement);
+
 	//we just need some dummy entity to render
 	//the graphics renderer does not like when we initialize
 	//stuff with nothing to render.
@@ -331,7 +331,6 @@ void Engine::run_server(bool *should_exit) {
 	Entity main_camera = new_entity();
 	add_component<Transform>(main_camera);
 	Velocity* v = add_component<Velocity>(main_camera);
-	v->transform = get_component_reference<Transform>(main_camera);	
 	Camera* c = add_component<Camera>(main_camera);
 	c->velocity = get_component_reference<Velocity>(main_camera);
 	c->target_zoom = 5.0f;

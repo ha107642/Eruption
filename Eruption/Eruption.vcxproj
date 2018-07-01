@@ -230,6 +230,7 @@ for %%f in ($(ProjectDir)shaders\*.vert) do (
   <ItemGroup>
     <ClInclude Include="Source\Aligned_Array.h" />
     <ClInclude Include="Source\Graphics\Buffer.h" />
+    <ClInclude Include="Source\System_Reference.h" />
     <ClInclude Include="Source\Systems\Camera.h" />
     <ClInclude Include="Source\Circular_Array.h" />
     <ClInclude Include="Source\Network\Client.h" />
