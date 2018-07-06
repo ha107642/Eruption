@@ -3,7 +3,8 @@
 #include "Engine.h"
 
 void Movement::update(Velocity * const v, Entity entity, Time & time) {
-	Transform* transform = v->transform.get();
+	Transform* transform = v->transform.get(); //~1 ms in test (rot calc was removed)
+	//Transform* transform = engine->get_component<Transform>(entity); //~6 ms in test
 	transform->position += v->linear * time.delta_time;
 	//transform->rotation = glm::rotate(transform->rotation, v->angular * time.delta_time, v->up);	
 	//transform->rotation = transform->rotation * glm::angleAxis(v->angular * time.delta_time, v->axis);

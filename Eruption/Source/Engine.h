@@ -19,6 +19,7 @@ private:
 	std::atomic<Entity> last_entity = 0;
 	std::vector<ISystem*> systems;
 	bool _is_authoritative;
+	bool enable_debug;
 
 	bool should_exit();
 	void update_systems(Time& time);
@@ -26,7 +27,7 @@ public:
 	Time time;
 	Input input;
 
-	Engine() { engine = this; }
+	Engine() : enable_debug(false) { engine = this; }
 
 	bool is_authoritative() { return _is_authoritative; };
 	Entity new_entity();
@@ -46,10 +47,13 @@ public:
 
 	void add_entity_component(Entity entity, ISystem *system);
 	void remove_entity_component(Entity entity, ISystem * system);
-	template<typename T> inline void register_system(System<T> *system) {
+	template<typename T> inline void register_system(System<T> *system, const char* system_name = nullptr) {
 		int system_id = systems.size();
 		system->system_id = system_id;
 		systems.push_back(system);
+		
+		if (system_name)
+			Debugging::debug_register_system(system, system_name);
 		//systems[typeid(T)] = system;
 	}
 
