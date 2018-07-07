@@ -4,9 +4,9 @@
 
 void Interpolate::update(Interpolation * const component, Entity entity, Time & time) {
 	Transform* current = engine->get_component<Transform>(entity);	
-	current->position = glm::mix(component->base.position, component->target.position, amount);
-	current->rotation = glm::mix(component->base.rotation, component->target.rotation, amount);
-	current->scale    = glm::mix(component->base.scale,    component->target.scale,    amount);
+	//current->position = glm::mix(component->base.position, component->target.position, amount);
+	//current->rotation = glm::mix(component->base.rotation, component->target.rotation, amount);
+	//current->scale    = glm::mix(component->base.scale,    component->target.scale,    amount);
 }
 
 void Interpolate::update(Time &time) {

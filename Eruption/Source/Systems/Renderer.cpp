@@ -13,10 +13,7 @@
 
 void Renderer::update(Render * const render, Transform_Matrix * transform, Entity entity, Time& time) {
 	Transform* t = render->transform.get();
-	glm::mat4 scale = glm::scale(t->scale);
-	glm::mat4 rotation = glm::toMat4(t->rotation);
-	glm::mat4 translation = glm::translate(t->position);
-	transform->model = translation * rotation * scale;
+	transform->model = t->matrix;
 }
 
 void Renderer::update_offsets() {

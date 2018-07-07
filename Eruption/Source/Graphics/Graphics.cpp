@@ -1527,7 +1527,7 @@ void Graphics::draw(Time& time) {
 	{
 		assert(camera != nullptr);
 		Transform* camera_transform = camera->velocity.get()->transform.get();
-		glm::vec3 pos = camera_transform->position;
+		glm::vec3 pos = camera_transform->get_position();
 		pos.y -= camera->zoom;
 		pos.z += camera->zoom;
 		

@@ -1,14 +1,12 @@
 #include "Movement.h"
 
 #include "Engine.h"
+#include <glm/gtx/euler_angles.hpp>
 
 void Movement::update(Velocity * const v, Entity entity, Time & time) {
 	Transform* transform = v->transform.get();
-	transform->position += v->linear * time.delta_time;
-	//transform->rotation = glm::rotate(transform->rotation, v->angular * time.delta_time, v->up);	
-	//transform->rotation = transform->rotation * glm::angleAxis(v->angular * time.delta_time, v->axis);
-	//transform->position.x += v->linear.x * time.delta_time; 
-	transform->rotation *= glm::quat(v->angular * time.delta_time); //Do we need to normalize here?
+	transform->matrix = glm::translate(transform->matrix, v->linear * time.delta_time);
+	transform->matrix *= glm::orientate4(v->angular * time.delta_time); //TODO: order?
 }
 
 void Movement::serialize(Memory_Stream & stream, Velocity & component, Entity entity) {

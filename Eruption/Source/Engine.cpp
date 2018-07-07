@@ -60,14 +60,11 @@ Component_Reference<Transform> t;
 void init_some_stuff(Engine& engine, Transform_System &movement, Renderer &renderer, Model* model) {
 	house = engine.new_entity();
 	ht = engine.add_component<Transform>(house);
-	ht->position.x = 1;
-	ht->scale.x = 1.0f;
-	ht->scale.y = 1.0f;
-	ht->scale.z = 1.0f;
+	ht->get_position().x = 1;
 
 	hr = engine.add_component<Render>(house);
 	hr->transform = movement.get_component_reference(house);
-	hr->transform->position.z = 10.f;
+	hr->transform->get_position().z = 10.f;
 	if (model) hr->model = model;
 
 	Velocity* hv = engine.add_component<Velocity>(house);
@@ -81,8 +78,8 @@ void init_some_stuff(Engine& engine, Transform_System &movement, Renderer &rende
 
 	house2 = engine.new_entity();
 	ht = engine.add_component<Transform>(house2);
-	ht->position.z = 1;
-	ht->scale = { 0.5f, 0.5f, 0.5f };
+	ht->get_position().z = 1;
+	ht->matrix = glm::scale(ht->matrix, glm::vec3(0.5f, 0.5f, 0.5f));
 
 	hv = engine.add_component<Velocity>(house2);
 	hv->linear.x = 2.f;
@@ -95,10 +92,10 @@ void init_some_stuff(Engine& engine, Transform_System &movement, Renderer &rende
 	hero = engine.new_entity();
 	engine.add_component<Transform>(hero);
 	t = movement.get_component_reference(hero);
-	t->position.x = 1;
-	t->position.z = 100;
+	t->get_position().x = 1;
+	t->get_position().z = 100;
 	sidekick = engine.new_entity(hero);
-	engine.get_component<Transform>(sidekick)->position.y = 123;
+	engine.get_component<Transform>(sidekick)->get_position().y = 123;
 
 	State state;
 
@@ -109,7 +106,7 @@ void init_some_stuff(Engine& engine, Transform_System &movement, Renderer &rende
 
 	Entity ground = engine.new_entity();
 	Transform* tr = add_component<Transform>(ground);
-	tr->position.z = -1;
+	tr->get_position().z = -1;
 	Render* gr = add_component<Render>(ground);
 	gr->transform = get_component_reference<Transform>(ground);
 	gr->model = new Model();
@@ -121,16 +118,16 @@ void init_some_stuff(Engine& engine, Transform_System &movement, Renderer &rende
 
 void do_some_stuff(Engine& engine, Transform_System &movement, Renderer &renderer, Time &time, Graphics *graphics = nullptr) {
 	Transform* tra = get_component<Transform>(house);
-	if (tra->position.x > 5.f) {
-		tra->position.x = -5.f;
-		get_component<Transform>(house2)->position.x = -5.f;
+	if (tra->get_position().x > 5.f) {
+		tra->get_position().x = -5.f;
+		get_component<Transform>(house2)->get_position().x = -5.f;
 	}
 
 
 	if (time.frame_count == 3) {
-		t->position.x = 5;
-		t->position.y = 30;
-		engine.get_component<Transform>(house2)->position.z = -0.5f;
+		t->get_position().x = 5;
+		t->get_position().y = 30;
+		engine.get_component<Transform>(house2)->get_position().z = -0.5f;
 	}
 	if (time.frame_count == 5) {
 		engine.destroy_entity(&hero);
@@ -173,9 +170,9 @@ void do_some_stuff(Engine& engine, Transform_System &movement, Renderer &rendere
 
 		Entity house3 = engine.new_entity();
 		ht = engine.add_component<Transform>(house3);
-		ht->position.z = 0.3f;
-		ht->position.y = (time.frame_count - 400.0f) * 0.1f;
-		ht->scale = { 0.7f, 0.5f, 1.0f };
+		ht->get_position().z = 0.3f;
+		ht->get_position().y = (time.frame_count - 400.0f) * 0.1f;
+		glm::scale(ht->matrix, glm::vec3(0.7f, 0.5f, 1.0f));
 
 		hr = engine.add_component<Render>(house3);
 		hr->transform = movement.get_component_reference(house3);
@@ -190,7 +187,7 @@ void do_some_stuff(Engine& engine, Transform_System &movement, Renderer &rendere
 
 		Entity new_ent = engine.new_entity();
 		Transform* t = engine.add_component<Transform>(new_ent);
-		t->position.z = 3.0f;
+		t->get_position().z = 3.0f;
 		engine.add_component<Render>(new_ent)->model = model;
 		if (last_entity != ENTITY_NULL)
 			engine.destroy_entity(&last_entity);

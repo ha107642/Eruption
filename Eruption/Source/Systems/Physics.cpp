@@ -41,17 +41,17 @@ void Physics::update(Time & time) {
 						set_axis(collision_data, components[i].component.velocity.get());
 						set_axis(collision_data, components[j].component.velocity.get());
 
-						engine->get_component<Transform>(components[i].entity)->position -= collision_data * 0.5f;
-						engine->get_component<Transform>(components[j].entity)->position += collision_data * 0.5f;
+						glm::translate(engine->get_component<Transform>(components[i].entity)->matrix, collision_data * -0.5f);
+						glm::translate(engine->get_component<Transform>(components[j].entity)->matrix, collision_data * 0.5f);
 					} else {
 						//Move i.
 						set_axis(collision_data, components[i].component.velocity.get());
-						engine->get_component<Transform>(components[i].entity)->position -= collision_data;
+						glm::translate(engine->get_component<Transform>(components[i].entity)->matrix, collision_data * -0.5f);
 					}
 				} else if (components[j].component.velocity.is_initialized()) {
 					//Move j.
 					set_axis(collision_data, components[j].component.velocity.get());
-					engine->get_component<Transform>(components[j].entity)->position -= collision_data;
+					glm::translate(engine->get_component<Transform>(components[j].entity)->matrix, collision_data * -0.5f);
 				}
 			}
 		}
@@ -68,8 +68,8 @@ bool Physics::resolve_collision(Component_Holder<Hitbox>& h1, Component_Holder<H
 	Hitbox& a = h1.component;
 	Hitbox& b = h2.component;	
 
-	glm::vec3 a_pos = a.position + t1->position;
-	glm::vec3 b_pos = b.position + t2->position;
+	glm::vec3 a_pos = a.position + t1->get_position();
+	glm::vec3 b_pos = b.position + t2->get_position();
 
 	float values[6];
 

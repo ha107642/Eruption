@@ -25,7 +25,7 @@ void Audio::play(Audio_Source* source) {
 void Audio::update(Time & time) {
 	int count = playing.size();
 	for (int i = count - 1; i >= 0; --i) {
-		glm::vec3 pos = playing[i].transform.get()->position;
+		glm::vec3 pos = playing[i].transform.get()->get_position();
 		alSource3f(playing[i].source.id, AL_POSITION, pos.x, pos.y, pos.z);
 		//alSource3f(source, AL_VELOCITY, 0.0f, 0.0f, 0.0f);
 		
