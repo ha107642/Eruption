@@ -4,7 +4,8 @@
 #include <glm/gtx/euler_angles.hpp>
 
 void Movement::update(Velocity * const v, Entity entity, Time & time) {
-	Transform* transform = v->transform.get();
+	Transform* transform = v->transform.get(); //~1 ms in test (rot calc was removed)
+	//Transform* transform = engine->get_component<Transform>(entity); //~6 ms in test	
 	transform->matrix = glm::translate(transform->matrix, v->linear * time.delta_time);
 	transform->matrix *= glm::orientate4(v->angular * time.delta_time); //TODO: order?
 }

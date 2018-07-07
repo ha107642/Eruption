@@ -11,15 +11,15 @@ void run_server_thread() {
 
 int main(int argc, char* argv[]) {
 	Engine engine;
-	//engine.run();	
+	engine.run();	
 	
-	// ----- Separate thread ----- 
-	signal = new bool();
-	*signal = false;
-	std::thread t = std::thread(run_server_thread);
-	engine.run_client();
-	*signal = true;
-	t.join();
+	//// ----- Separate thread ----- 
+	//signal = new bool();
+	//*signal = false;
+	//std::thread t = std::thread(run_server_thread);
+	//engine.run_client();
+	//*signal = true;
+	//t.join();
 
 
 	// ----- Separate process ----- 

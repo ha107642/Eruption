@@ -18,13 +18,13 @@ void Renderer::update(Render * const render, Transform_Matrix * transform, Entit
 
 void Renderer::update_offsets() {
 	int size = components.size();
-	std::vector<Render_Data> render_data(components.size());
+	std::vector<Model*> model_instances(components.size());
 	for (int i = 0; i < size; ++i) {
 		//render_data[i].offset = i * sizeof(Transform_Matrix);
-		render_data[i].model = components[i].component.model;
+		model_instances[i] = components[i].component.model;
 	}
 
-	graphics->update_command_buffers(render_data);
+	graphics->set_model_instances(model_instances);
 	update_command_buffers = false;
 }
 
@@ -103,10 +103,23 @@ void Renderer::deserialize(Memory_Stream & stream, Render * component, Entity en
 	delete[] model_name;
 }
 
+unsigned long upper_power_of_two(unsigned long v) {
+	v--;
+	v |= v >> 1;
+	v |= v >> 2;
+	v |= v >> 4;
+	v |= v >> 8;
+	v |= v >> 16;
+	v++;
+	return v;
+
+}
+
+
 void Renderer::set_state(System_State state) {
 	if (graphics) {
 		int capacity = transforms.capacity();
-		transforms.resize(state.count);
+		transforms.resize(upper_power_of_two(state.count));
 		if (capacity != transforms.capacity()) {
 			graphics->resize_dynamic_buffer(transforms.memory_capacity());
 		}

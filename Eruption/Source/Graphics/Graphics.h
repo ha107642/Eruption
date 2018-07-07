@@ -25,19 +25,14 @@ struct Transform_Matrix {
 	glm::mat4 model;
 };
 
-struct Render_Data {
-	Model* model;
-	//int offset;
-	//texture?
-};
-
 class Graphics {
 private:
 	friend class Buffer;
 
 	bool _is_initialized;
-	
+
 	std::vector<Model*> models; //TODO: Make contiguous (if needed?).
+	std::vector<Model*> model_instances;
 	Camera* camera;
 
 	VkExtent2D extent;
@@ -59,6 +54,7 @@ private:
 	VkSwapchainKHR swap_chain;
 	std::vector<VkImage> images;
 	std::vector<VkImageView> image_views;
+	VkRenderPass imgui_render_pass;
 	VkRenderPass render_pass;
 	//VkDescriptorSetLayout descriptor_set_layout;
 	VkDescriptorSet descriptor_set;
@@ -91,7 +87,7 @@ private:
 	VkSemaphore presentation_semaphore;
 
 	VkSubmitInfo graphics_submit_info;
-	
+
 	VkSurfaceCapabilitiesKHR surface_capabilities;
 	std::vector<VkSurfaceFormatKHR> formats;
 	std::vector<VkPresentModeKHR> present_modes;
@@ -130,7 +126,7 @@ private:
 	VkCommandBuffer begin_command_buffer(VkCommandPool command_pool);
 	void end_command_buffer(VkCommandBuffer buffer);
 	void end_command_buffer(VkCommandBuffer buffer, VkQueue queue, VkCommandPool command_pool);
-	void set_barrier_access_masks(VkAccessFlags * source_mask, VkAccessFlags * destination_mask, VkImageLayout old_layout, VkImageLayout new_layout);
+	void set_barrier_access_masks(VkAccessFlags* source_mask, VkAccessFlags* destination_mask, VkPipelineStageFlags* srcStageMask, VkPipelineStageFlags* dstStageMask, VkImageLayout old_layout, VkImageLayout new_layout);
 	void set_image_layout(VkImage image, VkFormat format, VkImageLayout old_layout, VkImageLayout new_layout, VkCommandBuffer buffer = VK_NULL_HANDLE);
 	void copy_image(VkImage source, VkImage destination, VkExtent2D extent, VkCommandBuffer buffer = VK_NULL_HANDLE);
 	void copy_buffer(VkBuffer source, VkBuffer destination, VkDeviceSize size, VkCommandBuffer buffer = VK_NULL_HANDLE);
@@ -144,16 +140,18 @@ public:
 	Graphics();
 	~Graphics();
 	bool is_initialized() { return _is_initialized; }
+	void initialize_imgui();
 	void initialize(Engine *engine);
 	void initialize_buffers();
 	bool is_device_compatible(VkPhysicalDevice device);
 	bool should_exit();
 	void resize(int width, int height);
-	void update_command_buffers(const std::vector<Render_Data> render_data);
+	void update_command_buffer(int i);
 	void resize_dynamic_buffer(VkDeviceSize size);
 	void update_dynamic_buffer(void * data, VkDeviceSize size);
 	Model* load_model(const char* model_name);
 	void load_texture(Model* model, const char * texture_name);
+	void set_model_instances(const std::vector<Model*> model_instances) { this->model_instances = model_instances; }
 
 	void set_main_camera(Camera* camera);
 	void draw(Time& time);

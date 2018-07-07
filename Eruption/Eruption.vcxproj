@@ -92,7 +92,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(VisualStudioDir)\Libraries\glfw-3.2.1.bin.WIN32\include;$(VisualStudioDir)\Libraries\glm;$(VisualStudioDir)\Libraries\enet-1.3.13\include;$(VisualStudioDir)\Libraries\openal-1.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(VisualStudioDir)\Libraries\glfw-3.2.1.bin.WIN32\include;$(VisualStudioDir)\Libraries\glm;$(VisualStudioDir)\Libraries\enet-1.3.13\include;$(VisualStudioDir)\Libraries\openal-1.1\include;$(ProjectDir)ThirdParty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -148,7 +148,7 @@ for %%f in ($(ProjectDir)shaders\*.vert) do (
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(VisualStudioDir)\Libraries\glfw-3.2.1.bin.WIN32\include;$(VisualStudioDir)\Libraries\glm;$(VisualStudioDir)\Libraries\enet-1.3.13\include;$(VisualStudioDir)\Libraries\openal-1.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(VisualStudioDir)\Libraries\glfw-3.2.1.bin.WIN32\include;$(VisualStudioDir)\Libraries\glm;$(VisualStudioDir)\Libraries\enet-1.3.13\include;$(VisualStudioDir)\Libraries\openal-1.1\include;$(ProjectDir)ThirdParty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -204,6 +204,7 @@ for %%f in ($(ProjectDir)shaders\*.vert) do (
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Debugging\DebugWindow.cpp" />
     <ClCompile Include="Source\Graphics\Buffer.cpp" />
     <ClCompile Include="Source\Systems\Camera.cpp" />
     <ClCompile Include="Source\Network\Client.cpp" />
@@ -226,9 +227,15 @@ for %%f in ($(ProjectDir)shaders\*.vert) do (
     <ClCompile Include="Source\Time.cpp" />
     <ClCompile Include="Source\Systems\Transform_System.cpp" />
     <ClCompile Include="Source\Graphics\Vertex.cpp" />
+    <ClCompile Include="ThirdParty\imgui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="ThirdParty\imgui\imgui_impl_vulkan.cpp" />
+    <ClCompile Include="ThirdParty\imgui\imgui.cpp" />
+    <ClCompile Include="ThirdParty\imgui\imgui_demo.cpp" />
+    <ClCompile Include="ThirdParty\imgui\imgui_draw.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Aligned_Array.h" />
+    <ClInclude Include="Source\Debugging\DebugWindow.h" />
     <ClInclude Include="Source\Graphics\Buffer.h" />
     <ClInclude Include="Source\Systems\Camera.h" />
     <ClInclude Include="Source\Circular_Array.h" />
@@ -254,6 +261,14 @@ for %%f in ($(ProjectDir)shaders\*.vert) do (
     <ClInclude Include="Source\Graphics\tiny_obj_loader.h" />
     <ClInclude Include="Source\Systems\Transform_System.h" />
     <ClInclude Include="Source\Graphics\Vertex.h" />
+    <ClInclude Include="ThirdParty\imgui\imgui_impl_glfw.h" />
+    <ClInclude Include="ThirdParty\imgui\imgui_impl_vulkan.h" />
+    <ClInclude Include="ThirdParty\imgui\imconfig.h" />
+    <ClInclude Include="ThirdParty\imgui\imgui.h" />
+    <ClInclude Include="ThirdParty\imgui\imgui_internal.h" />
+    <ClInclude Include="ThirdParty\imgui\stb_rect_pack.h" />
+    <ClInclude Include="ThirdParty\imgui\stb_textedit.h" />
+    <ClInclude Include="ThirdParty\imgui\stb_truetype.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="shaders\shader.frag">
