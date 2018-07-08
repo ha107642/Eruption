@@ -11,6 +11,7 @@
 #include "Systems/Movement.h"
 #include "Systems/Interpolate.h"
 #include "Systems/Physics.h"
+#include "Debugging/DebugWindow.h"
 
 #include <stdarg.h>
 #include <chrono>
@@ -57,7 +58,7 @@ State state;
 Render* hr;
 Transform* ht;
 Component_Reference<Transform> t;
-void init_some_stuff(Engine& engine, Transform_System &movement, Renderer &renderer, Model* model) {
+void init_some_stuff(Engine& engine, Transform_System &movement, Renderer &renderer, Model* model, Graphics* graphics = nullptr) {
 	house = engine.new_entity();
 	ht = engine.add_component<Transform>(house);
 	ht->position.x = 1;
@@ -109,8 +110,13 @@ void init_some_stuff(Engine& engine, Transform_System &movement, Renderer &rende
 	tr->position.z = -1;
 	Render* gr = add_component<Render>(ground);
 	gr->transform = get_component_reference<Transform>(ground);
-	gr->model = new Model();
-	gr->model->name = "ground_zx";
+	if (graphics) {
+		gr->model = graphics->load_model("ground_zx");
+	}
+	else {
+		gr->model = new Model();
+		gr->model->name = "ground_zx";
+	}
 
 	Hitbox* hb2 = add_component<Hitbox>(ground);
 	hb2->half_size = glm::vec3(100.f, 100.f, 1.f);
@@ -143,10 +149,53 @@ void do_some_stuff(Engine& engine, Transform_System &movement, Renderer &rendere
 		state = engine.get_state();
 		//engine.set_state(state);
 	}
+
+	if (time.frame_count == 150 || time.frame_count == 501) {
+		Model *model;
+		if (graphics) {
+			model = graphics->load_model("cube");
+		}
+		else {
+			model = new Model();
+			model->name = "cube";
+		}
+
+		Entity cube = engine.new_entity();
+		Transform* t = engine.add_component<Transform>(cube);
+		t->position.x = -30.f;
+		t->position.y = -30.f;
+		t->position.z = 1.0f;
+		t->scale = glm::vec3(0.5f);
+		Render* render = engine.add_component<Render>(cube);
+		render->model = model;
+		render->transform = get_component_reference<Transform>(cube);
+		Velocity* v = engine.add_component<Velocity>(cube);
+		v->angular.x = 0.3f;
+		v->angular.y = 1.f;
+		v->transform = get_component_reference<Transform>(cube);
+		//Hitbox* p = engine.add_component<Hitbox>(cube);
+		//p->half_size = glm::vec3(1.f);
+		//p->position = glm::vec3(0.f);
+		//p->velocity = get_component_reference<Velocity>(cube);
+
+		for (int i = -20; i < 20; ++i) {
+			for (int j = -20; j < 20; ++j) {
+				if (i == j == -20)
+					continue;
+				Entity cube2 = engine.new_entity(cube);
+				Transform* t2 = get_component<Transform>(cube2);
+				t2->position.x = i * 2;
+				t2->position.y = j * 2;
+				get_component<Render>(cube2)->model = graphics->load_model("cube");
+				get_component<Render>(cube2)->transform = get_component_reference<Transform>(cube2);
+				get_component<Velocity>(cube2)->transform = get_component_reference<Transform>(cube2);
+				assert(get_component<Render>(cube2)->transform.get() != t);
+			}
+		}
+	}
+
 	if (time.frame_count == 300) {
 		engine.set_state(state);
-		//movement.set_state(delta);
-		//time.time_scale = 0.3f;
 		
 		Audio* audio = (Audio*)engine.get_system<Audio_Source>();
 		
@@ -160,7 +209,6 @@ void do_some_stuff(Engine& engine, Transform_System &movement, Renderer &rendere
 		Model* labo;
 		if (graphics) {
 			labo = graphics->load_model("plant");
-			graphics->load_texture(labo, "plant");
 		}
 		else {
 			labo = new Model();
@@ -182,13 +230,20 @@ void do_some_stuff(Engine& engine, Transform_System &movement, Renderer &rendere
 		engine.set_state(state);
 	}
 	if (time.frame_count > 500) {
-		static Model *model = new Model();
-		model->name = "cube";
+		static Model *model;
+		if (graphics) {
+			model = graphics->load_model("cube");
+		} else {
+			model = new Model();
+			model->name = "cube";
+		}
 
 		Entity new_ent = engine.new_entity();
 		Transform* t = engine.add_component<Transform>(new_ent);
 		t->position.z = 3.0f;
-		engine.add_component<Render>(new_ent)->model = model;
+		Render* render = engine.add_component<Render>(new_ent);
+		render->model = model;
+		render->transform = get_component_reference<Transform>(new_ent);
 		if (last_entity != ENTITY_NULL)
 			engine.destroy_entity(&last_entity);
 		last_entity = new_ent;
@@ -197,25 +252,58 @@ void do_some_stuff(Engine& engine, Transform_System &movement, Renderer &rendere
 
 void Engine::run() {
 	_is_authoritative = true;
+	enable_debug = true;
+
 	graphics.initialize(this);
 	input.initialize(graphics.window);
 
 	Model* model = graphics.load_model("chalet");
 	graphics.load_texture(model, "chalet");
 
-	Transform_System tranform;
-	register_system(&tranform);
+	Model* plant = graphics.load_model("plant");
+	graphics.load_texture(plant, "plant");
+
+	Model *cube = graphics.load_model("cube");
+	graphics.load_texture(cube, "cube");
+
+	Model *ground = graphics.load_model("ground_zx");
+	graphics.load_texture(ground, "ground");
+
+	Transform_System transform;
+	register_system(&transform, "Transform");
 
 	Movement movement;
-	register_system(&movement);
+	register_system(&movement, "Movement");
 
 	Renderer renderer(&graphics);
-	register_system(&renderer);	
-	
-	Audio audio(false);
-	register_system(&audio);
+	register_system(&renderer, "Renderer");
 
-	init_some_stuff(*this, tranform, renderer, model);
+	Audio audio(false);
+	register_system(&audio, "Audio");
+
+	Camera_System camera;
+	register_system(&camera, "Camera");
+
+	{
+		Entity main_camera = new_entity();
+		add_component<Transform>(main_camera);
+		Velocity* v = add_component<Velocity>(main_camera);
+		v->transform = get_component_reference<Transform>(main_camera);
+		Camera* c = add_component<Camera>(main_camera);
+		c->velocity = get_component_reference<Velocity>(main_camera);
+		c->target_zoom = 5.0f;
+		graphics.set_main_camera(c);
+	}
+
+	Interpolate interp;
+	register_system(&interp, "Interpolate");
+
+	Physics physics;
+	register_system(&physics, "Physics");
+
+	graphics.initialize_imgui();
+
+	init_some_stuff(*this, transform, renderer, model, &graphics);
 
 	time.initialize();
 	while (!should_exit()) {
@@ -223,15 +311,23 @@ void Engine::run() {
 		//std::cout << "FPS: " << time.frames_per_second <<  ", frame_count: " << time.frame_count << std::endl;
 		input.update();
 
-		do_some_stuff(*this, tranform, renderer, time, &graphics);
+		do_some_stuff(*this, transform, renderer, time, &graphics);
 		update_systems(time);
+
+		Debugging::render_debug_window(time);
 
 		graphics.draw(time);
 	}
 }
 
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_glfw.h>
+#include <imgui/imgui_impl_vulkan.h>
+
 void Engine::run_client() {
 	_is_authoritative = false;
+	enable_debug = true;
+
 	graphics.initialize(this);
 	input.initialize(graphics.window);
 	Client client;
@@ -251,25 +347,25 @@ void Engine::run_client() {
 	graphics.load_texture(ground, "ground");
 
 	Transform_System transform;
-	register_system(&transform);
+	register_system(&transform, "Transform");
 
 	Movement movement;
-	register_system(&movement);
+	register_system(&movement, "Movement");
 
 	Renderer renderer(&graphics);
-	register_system(&renderer);
+	register_system(&renderer, "Renderer");
 
 	Audio audio(false);
-	register_system(&audio);
+	register_system(&audio, "Audio");
 
 	Camera_System camera;
-	register_system(&camera);
+	register_system(&camera, "Camera");
 
 	Interpolate interp;
-	register_system(&interp);
+	register_system(&interp, "Interpolate");
 
 	Physics physics;
-	register_system(&physics);
+	register_system(&physics, "Physics");
 
 	//System_Reference<Velocity, Transform> test(movement);
 
@@ -282,6 +378,8 @@ void Engine::run_client() {
 	hr->transform = transform.get_component_reference(dummy);
 	hr->model = graphics.load_model("chalet");// model;
 
+	graphics.initialize_imgui();
+
 	time.initialize();
 	while (!should_exit()) {
 		time.update();
@@ -291,6 +389,9 @@ void Engine::run_client() {
 		input.update();
 		//do_some_stuff(movement, renderer, time, &graphics);
 		update_systems(time);
+		
+		Debugging::render_debug_window(time);
+
 		graphics.draw(time);
 		client.flush();
 		//std::this_thread::sleep_for(std::chrono::seconds(10));
@@ -413,8 +514,18 @@ void Engine::set_state(State &state) {
 
 inline void Engine::update_systems(Time &time) {
 	int count = systems.size();
-	for (int i = 0; i < count; ++i)
-		systems[i]->update(time);
+	if (enable_debug) {
+		for (int i = 0; i < count; ++i) {
+			Debugging::system_timing_start(systems[i]);
+			systems[i]->update(time);
+			Debugging::system_timing_stop(systems[i]);
+		}
+	} 
+	else {
+		for (int i = 0; i < count; ++i) {
+			systems[i]->update(time);
+		}
+	}
 }
 
 Entity Engine::new_entity() {

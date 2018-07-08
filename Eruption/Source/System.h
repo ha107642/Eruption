@@ -22,7 +22,8 @@ public:
 	virtual void serialize_delta_state(Memory_Stream &stream, System_State &base) = 0;
 	virtual void deserialize_delta_state(Memory_Stream &stream) = 0;
 	virtual void set_state(System_State state) = 0;
-	virtual uint8_t get_system_id() = 0;
+	virtual int get_component_count() const = 0;
+	virtual uint8_t get_system_id() const = 0;
 };
 
 template<typename T>
@@ -55,8 +56,7 @@ protected:
 public:
 	static uint8_t system_id;
 
-	uint8_t get_system_id() override { return system_id; }
-	
+	uint8_t get_system_id() const override { return system_id; }
 	T* get_component(Entity entity) { return &components[map.at(entity)].component; }
 	int get_index(Entity entity) { 
 		auto it = map.find(entity); 
@@ -73,11 +73,13 @@ public:
 	}
 
 	Component_Reference<T> get_component_reference(Entity entity) {
+		assert(has_component(entity));
 		if (has_component(entity))
 			return Component_Reference<T>(get_component(entity), components.data(), this, entity, &map.at(entity));
 		else
 			return Component_Reference<T>();
 	}
+	int get_component_count() const { return components.size(); };
 	bool has_component(Entity entity) { return map.find(entity) != map.end(); }
 	virtual T* add_component(Entity entity) {
 		int new_index = components.size();
@@ -343,7 +345,6 @@ private:
 		index_pointer = &system->map[entity];
 		index = *index_pointer;
 		component = &system->components[index].component;
-		std::cout << "update" << std::endl;
 	}
 
 	inline bool is_valid() {
