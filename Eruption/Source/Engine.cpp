@@ -172,7 +172,6 @@ void do_some_stuff(Engine& engine, Transform_System &movement, Renderer &rendere
 		Velocity* v = engine.add_component<Velocity>(cube);
 		v->angular.x = 0.3f;
 		v->angular.y = 1.f;
-		v->transform = get_component_reference<Transform>(cube);
 		//Hitbox* p = engine.add_component<Hitbox>(cube);
 		//p->half_size = glm::vec3(1.f);
 		//p->position = glm::vec3(0.f);
@@ -187,8 +186,6 @@ void do_some_stuff(Engine& engine, Transform_System &movement, Renderer &rendere
 				t2->position.x = i * 2;
 				t2->position.y = j * 2;
 				get_component<Render>(cube2)->model = graphics->load_model("cube");
-				get_component<Render>(cube2)->transform = get_component_reference<Transform>(cube2);
-				get_component<Velocity>(cube2)->transform = get_component_reference<Transform>(cube2);
 				assert(get_component<Render>(cube2)->transform.get() != t);
 			}
 		}
@@ -288,9 +285,7 @@ void Engine::run() {
 		Entity main_camera = new_entity();
 		add_component<Transform>(main_camera);
 		Velocity* v = add_component<Velocity>(main_camera);
-		v->transform = get_component_reference<Transform>(main_camera);
 		Camera* c = add_component<Camera>(main_camera);
-		c->velocity = get_component_reference<Velocity>(main_camera);
 		c->target_zoom = 5.0f;
 		graphics.set_main_camera(c);
 	}
