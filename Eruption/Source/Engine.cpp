@@ -80,7 +80,7 @@ void init_some_stuff(Engine& engine, Transform_System &movement, Renderer &rende
 	house2 = engine.new_entity();
 	ht = engine.add_component<Transform>(house2);
 	ht->get_position().z = 1;
-	ht->matrix = glm::scale(ht->matrix, glm::vec3(0.5f, 0.5f, 0.5f));
+	ht->matrix = glm::scale(ht->matrix, glm::vec3(0.5f));
 
 	hv = engine.add_component<Velocity>(house2);
 	hv->linear.x = 2.f;
@@ -162,10 +162,10 @@ void do_some_stuff(Engine& engine, Transform_System &movement, Renderer &rendere
 
 		Entity cube = engine.new_entity();
 		Transform* t = engine.add_component<Transform>(cube);
-		t->position.x = -30.f;
-		t->position.y = -30.f;
-		t->position.z = 1.0f;
-		t->scale = glm::vec3(0.5f);
+		t->get_position().x = -30.f;
+		t->get_position().y = -30.f;
+		t->get_position().z = 1.0f;
+		t->matrix = glm::scale(t->matrix,glm::vec3(0.5f));
 		Render* render = engine.add_component<Render>(cube);
 		render->model = model;
 		render->transform = get_component_reference<Transform>(cube);
@@ -184,8 +184,8 @@ void do_some_stuff(Engine& engine, Transform_System &movement, Renderer &rendere
 					continue;
 				Entity cube2 = engine.new_entity(cube);
 				Transform* t2 = get_component<Transform>(cube2);
-				t2->position.x = i * 2;
-				t2->position.y = j * 2;
+				t2->get_position().x = i * 2;
+				t2->get_position().y = j * 2;
 				get_component<Render>(cube2)->model = graphics->load_model("cube");
 				get_component<Render>(cube2)->transform = get_component_reference<Transform>(cube2);
 				get_component<Velocity>(cube2)->transform = get_component_reference<Transform>(cube2);
@@ -220,7 +220,7 @@ void do_some_stuff(Engine& engine, Transform_System &movement, Renderer &rendere
 		ht = engine.add_component<Transform>(house3);
 		ht->get_position().z = 0.3f;
 		ht->get_position().y = (time.frame_count - 400.0f) * 0.1f;
-		glm::scale(ht->matrix, glm::vec3(0.7f, 0.5f, 1.0f));
+		ht->matrix = glm::scale(ht->matrix, glm::vec3(0.7f, 0.5f, 1.0f));
 
 		hr = engine.add_component<Render>(house3);
 		hr->transform = movement.get_component_reference(house3);
