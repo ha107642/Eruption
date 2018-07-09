@@ -14,7 +14,7 @@ void Input::update() {
 		if (is_down(GLFW_KEY_D)) velocity.x += pan_speed;
 		if (is_down(GLFW_KEY_A)) velocity.x -= pan_speed;
 
-		camera->velocity->linear = velocity;
+		camera_velocity->linear = velocity;
 	}
 }
 
@@ -33,6 +33,7 @@ void Input::handle_scroll(GLFWwindow * window, double x, double y) {
 
 void Input::set_camera_entity(Entity entity) {
 	camera = engine->get_component_reference<Camera>(entity);
+	camera_velocity = engine->get_component_reference<Velocity>(entity);
 }
 
 void Input::initialize(GLFWwindow* window) {

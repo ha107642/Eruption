@@ -1,23 +1,9 @@
 #include "Renderer.h"
 
-#include <glm/glm.hpp>
-#include <glm/gtx/transform.hpp>
-#include <glm/gtx/quaternion.hpp>
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/euler_angles.hpp>
-
 #include "Transform_System.h"
 #include "Memory_Stream.h"
 #include "io.h"
 #include "Engine.h"
-
-void Renderer::update(Render * const render, Transform_Matrix * transform, Entity entity, Time& time) {
-	Transform* t = render->transform.get();
-	glm::mat4 scale = glm::scale(t->scale);
-	glm::mat4 rotation = glm::toMat4(t->rotation);
-	glm::mat4 translation = glm::translate(t->position);
-	transform->model = translation * rotation * scale;
-}
 
 void Renderer::update_offsets() {
 	int size = components.size();
@@ -36,11 +22,10 @@ Render * Renderer::add_component(Entity entity) {
 	if (!graphics)
 		return component;
 
-	int capacity = transforms.capacity();
-	Transform_Matrix matrix = {};
-	transforms.push_back(matrix);
-	if (capacity != transforms.capacity()) {
-		graphics->resize_dynamic_buffer(transforms.memory_capacity());
+	int capacity = aligned_transforms.capacity();
+	aligned_transforms.push_back(glm::mat4());
+	if (capacity != aligned_transforms.capacity()) {
+		graphics->resize_dynamic_buffer(aligned_transforms.memory_capacity());
 	}
 
 	update_command_buffers = true;
@@ -50,7 +35,7 @@ Render * Renderer::add_component(Entity entity) {
 void Renderer::delete_component(Entity entity) {
 	System::delete_component(entity);
 	if (!graphics) return;
-	transforms.pop_back(); //Might need to change this if we don't recalculate all transforms every frame.
+	aligned_transforms.pop_back(); //Might need to change this if we don't recalculate all transforms every frame.
 	update_command_buffers = true;
 }
 
@@ -60,13 +45,13 @@ void Renderer::update(Time& time) {
 	if (count == 0) return;
 
 	for (int i = 0; i < count; ++i)
-		update(&components[i].component, &transforms[i], components[i].entity, time);
+		aligned_transforms[i] = transforms[i]->to_matrix();
 	
 	if (update_command_buffers) {
 		update_offsets();
 	}
 
-	graphics->update_dynamic_buffer(transforms.data(), transforms.memory_size());
+	graphics->update_dynamic_buffer(aligned_transforms.data(), aligned_transforms.memory_size());
 }
 
 void Renderer::serialize(Memory_Stream & stream, Render & component, Entity entity) {
@@ -101,7 +86,6 @@ void Renderer::deserialize(Memory_Stream & stream, Render * component, Entity en
 
 		component->model = model;
 	}
-	component->transform = engine->get_component_reference<Transform>(entity);
 
 	delete[] model_name;
 }
@@ -121,10 +105,10 @@ unsigned long upper_power_of_two(unsigned long v) {
 
 void Renderer::set_state(System_State state) {
 	if (graphics) {
-		int capacity = transforms.capacity();
-		transforms.resize(upper_power_of_two(state.count));
-		if (capacity != transforms.capacity()) {
-			graphics->resize_dynamic_buffer(transforms.memory_capacity());
+		int capacity = aligned_transforms.capacity();
+		aligned_transforms.resize(upper_power_of_two(state.count));
+		if (capacity != aligned_transforms.capacity()) {
+			graphics->resize_dynamic_buffer(aligned_transforms.memory_capacity());
 		}
 	}
 

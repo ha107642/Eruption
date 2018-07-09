@@ -104,3 +104,7 @@ template<typename T> inline Component_Reference<T> get_component_reference(Entit
 template<typename T> inline T* add_component(Entity entity) {
 	return engine->add_component<T>(entity);
 }
+
+template<typename T> inline System<T>* get_system() {
+	return engine->get_system<T>();
+}

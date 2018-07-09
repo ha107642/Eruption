@@ -7,8 +7,7 @@ void Audio::play(Audio_Source* source) {
 	play_info.source = *source;
 	
 	//HACK!
-	Component_Holder<Audio_Source>* holder = reinterpret_cast<Component_Holder<Audio_Source>*>((uint32_t*)source - 1);
-	play_info.transform = engine->get_component_reference<Transform>(holder->entity);
+	play_info.transform = engine->get_component_reference<Transform>(get_entity(source));
 	
 	ALint buffer, buffer_size;
 	alGetSourcei(source->id, AL_BUFFER, &buffer);

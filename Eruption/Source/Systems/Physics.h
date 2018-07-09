@@ -8,16 +8,19 @@
 struct Hitbox {
 	glm::vec3 position;
 	glm::vec3 half_size;
-
-	Component_Reference<Velocity> velocity;
 };
 
 class Physics : public System<Hitbox> {
 private:
 	float gravity = .982f;
+	System_Reference<Hitbox, Velocity> velocities;
+	System_Reference<Hitbox, Transform> transforms;
+
+	void update(Hitbox* const component, Entity entity, Time& time, Velocity& velocity);
 public:
-	void update(Hitbox* const component, Entity entity, Time& time) override;
+	Physics() : velocities(*this), transforms(*this) {}
+
 	void set_axis(glm::vec3 collision_data, Velocity* velocity);
 	void update(Time& time) override;
-	bool resolve_collision(Component_Holder<Hitbox>& h1, Component_Holder<Hitbox>& h2, glm::vec3* collision_data);
+	bool Physics::resolve_collision(const int i1, const int i2, glm::vec3* collision_data);
 };

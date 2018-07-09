@@ -9,6 +9,7 @@
 #include <imgui/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_vulkan.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include <Debugging/DebugWindow.h>
 
 #include "stb_image.h"
 //#include "tiny_obj_loader.h"
@@ -199,7 +200,7 @@ void Graphics::initialize(Engine *engine) {
 	initalize_command_buffers();
 
 	{
-		int unit_size = sizeof(Transform_Matrix);
+		int unit_size = sizeof(glm::vec4);
 		int alignment = (int)properties.limits.minUniformBufferOffsetAlignment;
 		dynamic_buffer_alignment = (unit_size / alignment) * alignment;
 		if (unit_size % alignment != 0)					//If we are not perfectly aligned already,
@@ -612,21 +613,25 @@ void Graphics::update_command_buffer(int i) {
 	vkCmdBindVertexBuffers(command_buffers[i], 0, 1, vertex_buffers, offsets);
 	vkCmdBindIndexBuffer(command_buffers[i], index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
+	
+	std::vector<VkDescriptorSet> descriptor_sets;
+	descriptor_sets.resize(2);
+	descriptor_sets[0] = descriptor_set;
 	for (uint32_t j = 0; j < model_instances.size(); ++j) {
 		uint32_t offset = j * dynamic_buffer_alignment;
 
-		std::vector<VkDescriptorSet> descriptor_sets;
-		descriptor_sets.push_back(descriptor_set);
-		if (model_instances[j]->texture_descriptor_set != VK_NULL_HANDLE)
-			descriptor_sets.push_back(model_instances[j]->texture_descriptor_set);
+		descriptor_sets[1] = model_instances[j]->texture_descriptor_set;
 
-		vkCmdBindDescriptorSets(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, descriptor_sets.size(), descriptor_sets.data(), 1, &offset);
+		const int descriptor_set_size = model_instances[j]->texture_descriptor_set == VK_NULL_HANDLE ? 1 : 2;
+		vkCmdBindDescriptorSets(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, descriptor_set_size, descriptor_sets.data(), 1, &offset);
 		vkCmdDrawIndexed(command_buffers[i], model_instances[j]->indices.size(), 1, model_instances[j]->index_offset, model_instances[j]->vertex_offset, 0);
 	}
 
+	Debugging::Timing_Data& timing2 = Debugging::timing_start("imgui draw");
 	ImDrawData* imgui_draw_data = ImGui::GetDrawData();
 	if (imgui_draw_data)
 		ImGui_ImplVulkan_RenderDrawData(imgui_draw_data, command_buffers[i]);
+	Debugging::timing_stop(timing2);
 
 	vkCmdEndRenderPass(command_buffers[i]);
 
@@ -773,7 +778,7 @@ void Graphics::update_buffer_descriptor_sets() {
 	VkDescriptorBufferInfo dynamic_info = {};
 	dynamic_info.buffer = dynamic_buffer.buffer;
 	dynamic_info.offset = 0;
-	dynamic_info.range = sizeof(Transform_Matrix);
+	dynamic_info.range = sizeof(glm::mat4);
 
 	VkWriteDescriptorSet write_sets[2] = {};
 	write_sets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1454,7 +1459,7 @@ bool Graphics::is_device_compatible(VkPhysicalDevice device) {
 	vkGetPhysicalDeviceFeatures(device, &features);
 
 	if (properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU || !features.geometryShader
-		|| properties.limits.maxPushConstantsSize < sizeof(Transform_Matrix))
+		|| properties.limits.maxPushConstantsSize < sizeof(glm::mat4))
 		return false;
 
 	if (!are_extensions_supported(device))
@@ -1641,7 +1646,8 @@ void Graphics::draw(Time& time) {
 
 	{
 		assert(camera != nullptr);
-		Transform* camera_transform = camera->velocity.get()->transform.get();
+		Entity camera_entity = engine->get_system<Camera>()->get_entity(camera);
+		Transform* camera_transform = get_component<Transform>(camera_entity);
 		glm::vec3 pos = camera_transform->position;
 		pos.y -= camera->zoom;
 		pos.z += camera->zoom;
@@ -1652,9 +1658,7 @@ void Graphics::draw(Time& time) {
 		mvp.projection = glm::perspective(glm::radians(45.0f), (float)extent.width / (float)extent.height, 0.1f, 100.0f);
 		mvp.projection[1][1] *= -1;
 
-		Transform_Matrix camera_matrix = {};
-		camera_matrix.model = mvp.projection * mvp.view * mvp.model;
-
+		camera_matrix = mvp.projection * mvp.view * mvp.model;
 		uniform_buffer.fill_staging_buffer(&camera_matrix, sizeof(camera_matrix));
 		uniform_buffer.copy_staging_data();
 		//update_command_buffers();
@@ -1662,7 +1666,6 @@ void Graphics::draw(Time& time) {
 
 	uint32_t image_index;
 	VkResult result = vkAcquireNextImageKHR(device, swap_chain, std::numeric_limits<uint64_t>::max(), image_semaphore, VK_NULL_HANDLE, &image_index);
-	update_command_buffer(image_index);
 
 	if (result != VK_SUCCESS) {
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -1673,6 +1676,10 @@ void Graphics::draw(Time& time) {
 			Engine::fail("Unable to acquire swap chain image");
 		}
 	}
+
+	Debugging::Timing_Data& timing = Debugging::timing_start("cmd buffers");
+	update_command_buffer(image_index);
+	Debugging::timing_stop(timing);
 
 	VkSubmitInfo submit_info = {};
 	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1700,7 +1707,9 @@ void Graphics::draw(Time& time) {
 	present_info.pSwapchains = &swap_chain;
 	present_info.pImageIndices = &image_index;
 
+	Debugging::Timing_Data& image_wait_timing = Debugging::timing_start("Wait for image");
 	result = vkQueuePresentKHR(window_queue, &present_info);
+	Debugging::timing_stop(image_wait_timing);
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
 		reinitialize_swap_chain();

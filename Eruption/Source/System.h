@@ -5,6 +5,7 @@
 #include "State.h"
 #include "Memory_Stream.h"
 #include "io.h"
+#include "System_Reference.h"
 
 #include <vector>
 #include <unordered_map>
@@ -40,6 +41,8 @@ private:
 protected:
 	std::vector<Component_Holder<T>> components;
 	std::unordered_map<Entity, int> map = {};
+	std::vector<Reference_Subscriber<T>*> subscribers;
+	std::vector<ISystem_Reference*> references;
 
 	virtual bool are_components_equal(T* a, T* b) { return memcmp(a, b, sizeof(*a)) == 0; } //TODO: FIX! This may compare garbage alignment bytes, and thus not work correctly.
 	virtual void reindex_map() {
@@ -55,6 +58,20 @@ public:
 
 	uint8_t get_system_id() const override { return system_id; }
 	T* get_component(Entity entity) { return &components[map.at(entity)].component; }
+	int get_index(Entity entity) { 
+		auto it = map.find(entity); 
+		if (it == map.end())
+			return -1;
+		return it->second;
+	}
+
+	Entity get_entity(const T* component) {
+		//HACK!
+		Component_Holder<T>* holder = reinterpret_cast<Component_Holder<T>*>((Entity*)component - 1);
+		assert(has_component(holder->entity));
+		return holder->entity;
+	}
+
 	Component_Reference<T> get_component_reference(Entity entity) {
 		assert(has_component(entity));
 		if (has_component(entity))
@@ -69,9 +86,31 @@ public:
 		Component_Holder<T> holder = {};
 		holder.entity = entity;
 		holder.component = {};
+		
+		const bool is_expanding = components.size() == components.capacity();
+		char* old_address;
+		if (is_expanding)
+			old_address = reinterpret_cast<char*>(components.data());
+		
 		components.push_back(holder);
 		map.insert({ entity, new_index });
+		
+		if (is_expanding) {
+			const char* new_address = reinterpret_cast<char*>(components.data());
+			if (old_address != new_address) {
+				const int64_t offset = new_address - old_address;
+				for (size_t i = 0; i < subscribers.size(); ++i)
+					subscribers[i]->components_reallocated(offset);
+			}
+		}
+
 		add_entity_component(entity, this);
+
+		for (size_t i = 0; i < subscribers.size(); ++i)
+			subscribers[i]->component_added(entity, &holder.component);
+		for (size_t i = 0; i < references.size(); ++i)
+			references[i]->base_component_added(entity);
+
 		return &components[new_index].component;
 	}
 
@@ -86,6 +125,14 @@ public:
 
 	virtual void deserialize(Memory_Stream &stream, T* component, Entity entity) {
 		read(stream, component);
+	}
+
+	virtual void subscribe(Reference_Subscriber<T>* system) {
+		subscribers.push_back(system);
+	}
+
+	virtual void add_system_reference(ISystem_Reference* reference) {
+		references.push_back(reference);
 	}
 
 	virtual System_State get_state() override {
@@ -117,6 +164,15 @@ public:
 			deserialize(stream, &components[i].component, components[i].entity);
 		}
 		//memcpy(components.data(), state.data.get(), state.size);
+
+		//TODO: Do this for subscribers as well?
+		std::vector<Entity> entities;
+		entities.reserve(components.size());
+		for (size_t i = 0; i < components.size(); ++i)
+			entities.push_back(components[i].entity);
+		for (size_t i = 0; i < references.size(); ++i)
+			references[i]->state_updated(entities);
+
 		reindex_map();
 	}
 
@@ -140,14 +196,26 @@ public:
 	}
 
 	virtual void delete_component(Entity entity) {
-		int index = map[entity];
+		const int index = map[entity];
+		const int last_index = components.size() - 1;
 		Component_Holder<T> &index_ref = components[index];
-		Component_Holder<T> &last_ref = components[components.size() - 1];
-		map[last_ref.entity] = index; //We're swapping the indices, so we need to swap in the map as well.
-		std::swap(index_ref, last_ref);
+		Component_Holder<T> &last_ref = components[last_index];
+		
+		if (&index_ref != &last_ref) {
+			map[last_ref.entity] = index; //We're swapping the indices, so we need to swap in the map as well.
+			std::swap(index_ref, last_ref);
+			for (size_t i = 0; i < subscribers.size(); ++i) {
+				subscribers[i]->component_moved(index_ref.entity, &index_ref.component);
+				subscribers[i]->component_moved(last_ref.entity, &last_ref.component);
+			}
+		}
 		components.pop_back();
 		map.erase(entity);
 		remove_entity_component(entity, this);
+		for (size_t i = 0; i < subscribers.size(); ++i)
+			subscribers[i]->component_deleted(entity);
+		for (size_t i = 0; i < references.size(); ++i)
+			references[i]->base_component_deleted(index);
 	}
 
 	virtual void update(Time& time) override {

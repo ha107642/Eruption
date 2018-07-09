@@ -209,6 +209,9 @@
     <ClInclude Include="Source\Debugging\DebugWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+	<ClInclude Include="Source\System_Reference.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\build_shaders.bat">

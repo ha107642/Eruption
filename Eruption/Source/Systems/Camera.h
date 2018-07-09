@@ -6,7 +6,6 @@
 struct Camera {
 	float zoom = 5.f;
 	float target_zoom = 5.f;
-	Component_Reference<Velocity> velocity;
 };
 
 class Camera_System : public System<Camera> {
