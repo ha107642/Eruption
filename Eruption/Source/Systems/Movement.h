@@ -10,10 +10,7 @@
 
 struct Velocity {
 	glm::vec3 linear;
-	glm::vec3 angular; //The magnitude represents the speed..
-	//float angular;
-	//glm::vec3 axis = { 0.f, 0.0f, 1.f };
-	//glm::quat angular = { 1.0f, 0.f, 0.f, 0.f };
+	glm::vec3 angular;
 };
 
 class Movement : public System<Velocity> {

@@ -21,10 +21,6 @@ struct Model_View_Projection {
 	glm::mat4 projection;
 };
 
-struct Transform_Matrix {
-	glm::mat4 model;
-};
-
 class Graphics {
 private:
 	friend class Buffer;
@@ -34,6 +30,7 @@ private:
 	std::vector<Model*> models; //TODO: Make contiguous (if needed?).
 	std::vector<Model*> model_instances;
 	Camera* camera;
+	glm::mat4 camera_matrix;
 
 	VkExtent2D extent;
 	int graphics_family_index;
@@ -153,6 +150,7 @@ public:
 	void load_texture(Model* model, const char * texture_name);
 	void set_model_instances(const std::vector<Model*> model_instances) { this->model_instances = model_instances; }
 
+	const glm::mat4& get_camera_matrix() { return camera_matrix; }
 	void set_main_camera(Camera* camera);
 	void draw(Time& time);
 };

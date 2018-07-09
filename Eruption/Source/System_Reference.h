@@ -1,8 +1,9 @@
 #pragma once
 
+#include "Entity.h"
+
 #include <vector>
 #include <assert.h>
-#include "Entity.h"
 
 template<typename T> class System;
 template<typename T> inline System<T>* get_system();
@@ -79,6 +80,8 @@ protected:
 	virtual void components_reallocated(const int64_t offset) override {
 		size_t count = components.size();
 		for (size_t i = 0; i < count; ++i) {
+			if (components[i] == nullptr)
+				continue;
 			char* address = reinterpret_cast<char*>(components[i]);
 			address += offset;
 			components[i] = reinterpret_cast<C*>(address);

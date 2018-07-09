@@ -67,8 +67,7 @@ void init_some_stuff(Engine& engine, Transform_System &movement, Renderer &rende
 	ht->scale.z = 1.0f;
 
 	hr = engine.add_component<Render>(house);
-	hr->transform = movement.get_component_reference(house);
-	hr->transform->position.z = 10.f;
+	ht->position.z = 10.f;
 	if (model) hr->model = model;
 
 	Velocity* hv = engine.add_component<Velocity>(house);
@@ -87,7 +86,6 @@ void init_some_stuff(Engine& engine, Transform_System &movement, Renderer &rende
 	hv->linear.x = 2.f;
 
 	hr = engine.add_component<Render>(house2);
-	hr->transform = movement.get_component_reference(house2);
 	if (model) hr->model = model;
 
 	hero = engine.new_entity();
@@ -109,7 +107,6 @@ void init_some_stuff(Engine& engine, Transform_System &movement, Renderer &rende
 	Transform* tr = add_component<Transform>(ground);
 	tr->position.z = -1;
 	Render* gr = add_component<Render>(ground);
-	gr->transform = get_component_reference<Transform>(ground);
 	if (graphics) {
 		gr->model = graphics->load_model("ground_zx");
 	}
@@ -161,32 +158,43 @@ void do_some_stuff(Engine& engine, Transform_System &movement, Renderer &rendere
 		}
 
 		Entity cube = engine.new_entity();
-		Transform* t = engine.add_component<Transform>(cube);
-		t->position.x = -30.f;
-		t->position.y = -30.f;
-		t->position.z = 1.0f;
-		t->scale = glm::vec3(0.5f);
-		Render* render = engine.add_component<Render>(cube);
-		render->model = model;
-		render->transform = get_component_reference<Transform>(cube);
-		Velocity* v = engine.add_component<Velocity>(cube);
-		v->angular.x = 0.3f;
-		v->angular.y = 1.f;
-		//Hitbox* p = engine.add_component<Hitbox>(cube);
-		//p->half_size = glm::vec3(1.f);
-		//p->position = glm::vec3(0.f);
-		//p->velocity = get_component_reference<Velocity>(cube);
+		{
+			Transform* t = engine.add_component<Transform>(cube);
+			t->position.x = -200.f;
+			t->position.y = -200.f;
+			t->position.z = 1.0f;
+			t->scale = glm::vec3(0.5f);
+			Render* render = engine.add_component<Render>(cube);
+			render->model = model;
+			Velocity* v = engine.add_component<Velocity>(cube);
+			v->angular.x = 0.f;
+			v->angular.y = 0.f;
+			//Hitbox* p = engine.add_component<Hitbox>(cube);
+			//p->half_size = glm::vec3(1.f);
+			//p->position = glm::vec3(0.f);
+			//p->velocity = get_component_reference<Velocity>(cube);
+		}
 
-		for (int i = -20; i < 20; ++i) {
-			for (int j = -20; j < 20; ++j) {
-				if (i == j == -20)
+#ifdef _DEBUG
+		const int SIZE = 10;
+#else
+		const int SIZE = 100;
+#endif
+
+		for (int i = -SIZE; i < SIZE; ++i) {
+			for (int j = -SIZE; j < SIZE; ++j) {
+				if (i == j == -SIZE)
 					continue;
 				Entity cube2 = engine.new_entity(cube);
-				Transform* t2 = get_component<Transform>(cube2);
-				t2->position.x = i * 2;
-				t2->position.y = j * 2;
+				Transform* t = get_component<Transform>(cube2);
+				t->position.x = i * 2;
+				t->position.y = j * 2;
+				t->scale.x += (float)(i + 50) / 400.f;
+				t->scale.z += (float)(j + 50) / 400.f;
+				Velocity* v = get_component<Velocity>(cube2);
+				v->angular.x = i / 100.f * 3.14f;
+				v->angular.y = j / 100.f * 3.14f;
 				get_component<Render>(cube2)->model = graphics->load_model("cube");
-				assert(get_component<Render>(cube2)->transform.get() != t);
 			}
 		}
 	}
@@ -220,7 +228,6 @@ void do_some_stuff(Engine& engine, Transform_System &movement, Renderer &rendere
 		ht->scale = { 0.7f, 0.5f, 1.0f };
 
 		hr = engine.add_component<Render>(house3);
-		hr->transform = movement.get_component_reference(house3);
 		hr->model = labo;
 	}
 	if (time.frame_count == 500) {
@@ -240,7 +247,6 @@ void do_some_stuff(Engine& engine, Transform_System &movement, Renderer &rendere
 		t->position.z = 3.0f;
 		Render* render = engine.add_component<Render>(new_ent);
 		render->model = model;
-		render->transform = get_component_reference<Transform>(new_ent);
 		if (last_entity != ENTITY_NULL)
 			engine.destroy_entity(&last_entity);
 		last_entity = new_ent;
@@ -310,8 +316,9 @@ void Engine::run() {
 		update_systems(time);
 
 		Debugging::render_debug_window(time);
-
+		Debugging::Timing_Data& timing = Debugging::timing_start("Draw");
 		graphics.draw(time);
+		Debugging::timing_stop(timing);
 	}
 }
 
@@ -370,7 +377,6 @@ void Engine::run_client() {
 	Entity dummy = new_entity();
 	ht = add_component<Transform>(dummy);	
 	hr = add_component<Render>(dummy);
-	hr->transform = transform.get_component_reference(dummy);
 	hr->model = graphics.load_model("chalet");// model;
 
 	graphics.initialize_imgui();

@@ -7,6 +7,15 @@
 #include <sstream>
 
 
+glm::mat4 Transform::to_matrix() {
+	glm::mat4 matrix = glm::toMat4(rotation);
+	matrix[0] *= scale.x;
+	matrix[1] *= scale.y;
+	matrix[2] *= scale.z;
+	*reinterpret_cast<glm::vec3*>(&matrix[3]) = position;
+	return matrix;
+};
+
 void Transform_System::update(Transform* const t, Entity entity, Time& time) {
 	if (!engine->is_authoritative())
 		return;

@@ -5,13 +5,14 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/transform.hpp>
 
 struct Transform {
-	//glm::mat4 translation;
 	glm::vec3 position;
-	//glm::vec3 rotation;
 	glm::quat rotation;
 	glm::vec3 scale = { 1, 1, 1 };
+
+	glm::mat4 to_matrix();
 };
 
 class Transform_System : public System<Transform> { //Needs a better name... meh
