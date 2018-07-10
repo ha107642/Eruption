@@ -9,6 +9,7 @@ namespace Debugging {
 	void render_debug_window(const Time &time);
 
 	Timing_Data& timing_start(char* name);
+	Timing_Data& timing_start(Timing_Data& timing);
 	void timing_stop(Timing_Data& timing);
 	void system_timing_start(ISystem* system);
 	void system_timing_stop(ISystem* system);

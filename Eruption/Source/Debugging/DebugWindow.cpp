@@ -13,6 +13,7 @@ namespace Debugging {
 		float time;
 		steady_clock::time_point start_time;
 		steady_clock::time_point end_time;
+		float average_time;
 	};
 
 	struct System_Timing_Data {
@@ -45,12 +46,14 @@ namespace Debugging {
 			ImGui::Text("FPS: %.2f", time.frames_per_second);
 
 			for (System_Timing_Data& data : system_timings) {
-				ImGui::Text("%-*s: %.2f ms [%d]", longest_system_name, data.timing.name, data.timing.time * 1000.f, data.system->get_component_count());
+				data.timing.average_time = data.timing.average_time * 0.5f + data.timing.time * 0.5f;
+				ImGui::Text("%-*s: %.2f ms [%d]", longest_system_name, data.timing.name, data.timing.average_time * 1000.f, data.system->get_component_count());
 				data.timing.time = 0.f;
 			}
 
 			for (Timing_Data& data : timings) {
-				ImGui::Text("%-*s: %.2f ms", longest_system_name, data.name, data.time * 1000.f);
+				data.average_time = data.average_time * 0.5f + data.time * 0.5f;
+				ImGui::Text("%-*s: %.2f ms", longest_system_name, data.name, data.average_time * 1000.f);
 				data.time = 0.f;
 			}
 
@@ -85,6 +88,11 @@ namespace Debugging {
 
 		timing->start_time = high_resolution_clock::now();
 		return *timing;
+	}
+
+	Timing_Data& timing_start(Timing_Data& timing) {
+		timing.start_time = high_resolution_clock::now();
+		return timing;
 	}
 
 	void timing_stop(Timing_Data& timing) {
