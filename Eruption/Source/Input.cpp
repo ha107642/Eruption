@@ -5,7 +5,7 @@
 void Input::update() {
 	glfwPollEvents();
 
-	if (camera.is_initialized()) {
+	if (camera_entity != ENTITY_NULL) {
 		const float pan_speed = 10.f;
 		glm::vec3 velocity;
 
@@ -14,7 +14,7 @@ void Input::update() {
 		if (is_down(GLFW_KEY_D)) velocity.x += pan_speed;
 		if (is_down(GLFW_KEY_A)) velocity.x -= pan_speed;
 
-		camera_velocity->linear = velocity;
+		get_component<Velocity>(camera_entity)->linear = velocity;
 	}
 }
 
@@ -25,15 +25,15 @@ bool Input::is_down(int key) {
 void Input::handle_scroll(GLFWwindow * window, double x, double y) {
 	const float zoom_speed = 1.f;
 	
-	if (camera.is_initialized()) {
-		camera->target_zoom = glm::clamp(camera->target_zoom - (float)(y * zoom_speed), -5.f, 25.f);
+	if (camera_entity != ENTITY_NULL) {
+		Camera* camera = get_component<Camera>(camera_entity);
+		camera->target_zoom = glm::clamp(camera->target_zoom - (float)(y * zoom_speed), -5.f, 50.f);
 		printf("scroll received: (%f, %f). zoomm = %f\n", x, y, camera->zoom);
 	}
 }
 
 void Input::set_camera_entity(Entity entity) {
-	camera = engine->get_component_reference<Camera>(entity);
-	camera_velocity = engine->get_component_reference<Velocity>(entity);
+	camera_entity = entity;
 }
 
 void Input::initialize(GLFWwindow* window) {

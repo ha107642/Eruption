@@ -40,7 +40,7 @@ private:
 	friend class Component_Reference<T>;
 protected:
 	std::vector<Component_Holder<T>> components;
-	std::unordered_map<Entity, int> map = {};
+	std::unordered_map<Entity, int, Entity_Hash> map = {};
 	std::vector<Reference_Subscriber<T>*> subscribers;
 	std::vector<ISystem_Reference*> references;
 

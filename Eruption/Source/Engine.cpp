@@ -170,9 +170,8 @@ void do_some_stuff(Engine& engine, Transform_System &movement, Renderer &rendere
 			v->angular.x = 0.f;
 			v->angular.y = 0.f;
 			//Hitbox* p = engine.add_component<Hitbox>(cube);
-			//p->half_size = glm::vec3(1.f);
+			//p->half_size = glm::vec3(.5f);
 			//p->position = glm::vec3(0.f);
-			//p->velocity = get_component_reference<Velocity>(cube);
 		}
 
 #ifdef _DEBUG

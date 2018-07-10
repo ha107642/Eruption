@@ -1,6 +1,7 @@
 #include "Physics.h"
 
 #include "Engine.h"
+#include "../Debugging/DebugWindow.h"
 
 void Physics::update(Hitbox * const component, Entity entity, Time & time, Velocity& velocity) {
 	velocity.linear.z -= gravity * time.delta_time;
@@ -27,9 +28,11 @@ void Physics::update(Time & time) {
 		if (velocities[i])
 			update(&components[i].component, components[i].entity, time, *velocities[i]);
 
+	Debugging::Timing_Data& timing = Debugging::timing_start("resolve_collision");
+
+	glm::vec3 collision_data;
 	for (int i = 0; i < count; ++i) {
 		for (int j = i + 1; j < count; ++j) {
-			glm::vec3 collision_data;
 			if (components[i].entity == components[j].entity)
 				continue;
 
@@ -58,6 +61,7 @@ void Physics::update(Time & time) {
 			}
 		}
 	}
+	Debugging::timing_stop(timing);
 }
 
 bool Physics::resolve_collision(const int i1, const int i2, glm::vec3* collision_data) {

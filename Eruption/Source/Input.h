@@ -10,8 +10,7 @@ extern void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 class Input {
 private:
-	Component_Reference<Camera> camera;
-	Component_Reference<Velocity> camera_velocity;
+	Entity camera_entity = ENTITY_NULL;
 	GLFWwindow* window;
 public:
 	void initialize(GLFWwindow * window);
