@@ -34,7 +34,7 @@ public:
 	Entity new_entity(Entity copy_from);
 	void destroy_entity(Entity *entity);
 
-	void set_main_camera(Entity entity, Camera* camera);
+	void set_main_camera(Entity entity);
 	void resize_window(int width, int height);
 	void set_delta_state(Memory_Stream & stream);
 	void serialize_delta_state(Memory_Stream &stream, State &base_state);

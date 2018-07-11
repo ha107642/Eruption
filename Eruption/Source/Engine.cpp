@@ -16,6 +16,8 @@
 #include <stdarg.h>
 #include <chrono>
 #include <thread>
+#include <glm/gtx/quaternion.hpp>
+
 
 thread_local Engine *engine;
 
@@ -182,7 +184,7 @@ void do_some_stuff(Engine& engine, Transform_System &movement, Renderer &rendere
 
 		for (int i = -SIZE; i < SIZE; ++i) {
 			for (int j = -SIZE; j < SIZE; ++j) {
-				if (i == j == -SIZE)
+				if (i == j && j == -SIZE)
 					continue;
 				Entity cube2 = engine.new_entity(cube);
 				Transform* t = get_component<Transform>(cube2);
@@ -249,6 +251,19 @@ void do_some_stuff(Engine& engine, Transform_System &movement, Renderer &rendere
 		if (last_entity != ENTITY_NULL)
 			engine.destroy_entity(&last_entity);
 		last_entity = new_ent;
+
+		if (time.frame_count % 200 == 0) {
+			Audio* audio = (Audio*)engine.get_system<Audio_Source>();
+			Audio_Source* sound;
+			if (audio->has_component(house2)) {
+				sound = get_component<Audio_Source>(house2);
+			}
+			else {
+				sound = add_component<Audio_Source>(house2);
+				sound->id = audio->create_audio_source(SOUND_CHANNEL_EFFECTS, false);
+			}
+			audio->play(sound);
+		}
 	}
 }
 
@@ -288,11 +303,14 @@ void Engine::run() {
 
 	{
 		Entity main_camera = new_entity();
-		add_component<Transform>(main_camera);
+		Transform* camera_transform = add_component<Transform>(main_camera);
 		Velocity* v = add_component<Velocity>(main_camera);
 		Camera* c = add_component<Camera>(main_camera);
-		c->target_zoom = 5.0f;
-		graphics.set_main_camera(c);
+		c->target_zoom = 20.0f;
+		graphics.set_main_camera(main_camera);
+		audio.set_listener_entity(main_camera);
+
+		camera_transform->rotation = glm::quat(glm::vec3(glm::radians(-45.0f), 0.0f, 0.f));
 	}
 
 	Interpolate interp;
@@ -304,7 +322,7 @@ void Engine::run() {
 	graphics.initialize_imgui();
 
 	init_some_stuff(*this, transform, renderer, model, &graphics);
-
+	
 	time.initialize();
 	while (!should_exit()) {
 		time.update();
@@ -433,7 +451,8 @@ void Engine::run_server(bool *should_exit) {
 	Velocity* v = add_component<Velocity>(main_camera);
 	Camera* c = add_component<Camera>(main_camera);
 	c->target_zoom = 5.0f;
-	graphics.set_main_camera(c);
+	graphics.set_main_camera(main_camera);
+	audio.set_listener_entity(main_camera);
 
 	Model *model = new Model();
 	model->name = "chalet";
@@ -462,9 +481,9 @@ void Engine::run_server(bool *should_exit) {
 	}
 }
 
-void Engine::set_main_camera(Entity entity, Camera * camera) {
+void Engine::set_main_camera(Entity entity) {
 	if (graphics.is_initialized()) 
-		graphics.set_main_camera(camera);
+		graphics.set_main_camera(entity);
 	input.set_camera_entity(entity);
 }
 

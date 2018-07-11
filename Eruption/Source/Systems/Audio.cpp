@@ -1,35 +1,60 @@
 #include "Audio.h"
 
 #include "Engine.h"
+#include "../Glm_Constants.h"
 
 void Audio::play(Audio_Source* source) {
 	Playing_Audio play_info;
-	play_info.source = *source;
-	
-	//HACK!
-	play_info.transform = engine->get_component_reference<Transform>(get_entity(source));
-	
+	play_info.id = source->id;
+	play_info.entity = get_entity(source);
+
 	ALint buffer, buffer_size;
 	alGetSourcei(source->id, AL_BUFFER, &buffer);
 	alGetBufferi(buffer, AL_SIZE, &buffer_size);
 	float length = 2.0f; //hardcoded..... FIX.
 
 	play_info.end_time = engine->time.engine_run_time + length;
-
+	
 	alSourcePlay(source->id);
 	playing.push_back(play_info);
 	playing_map[source->id] = playing.size() - 1;
 }
 
 void Audio::update(Time & time) {
+
+	if (listener) {
+		Transform* transform = engine->get_component<Transform>(listener);
+		Velocity* velocity = engine->get_component<Velocity>(listener);
+		
+		const glm::vec3 listener_forward = transform->rotation * glm::FORWARD;
+		const glm::vec3 listener_up = transform->rotation * glm::UP;
+		ALfloat orientation[] = {
+			listener_forward.x,
+			listener_forward.y,
+			listener_forward.z,
+			listener_up.x,
+			listener_up.y,
+			listener_up.z 
+		};
+
+		alListener3f(AL_POSITION, transform->position.x, transform->position.y, transform->position.z);
+		// check for errors
+		alListener3f(AL_VELOCITY, velocity->linear.x, velocity->linear.y, velocity->linear.z);
+		// check for errors
+		alListenerfv(AL_ORIENTATION, orientation);
+		// check for errors
+		alListenerf(AL_GAIN, 0.05f);
+	}
+
 	int count = playing.size();
 	for (int i = count - 1; i >= 0; --i) {
-		glm::vec3 pos = playing[i].transform.get()->position;
-		alSource3f(playing[i].source.id, AL_POSITION, pos.x, pos.y, pos.z);
+		
+		const glm::vec3 pos = engine->get_component<Transform>(playing[i].entity)->position;
+		alSource3f(playing[i].id, AL_POSITION, pos.x, pos.y, pos.z);
 		//alSource3f(source, AL_VELOCITY, 0.0f, 0.0f, 0.0f);
 		
 		if (time.engine_run_time > playing[i].end_time) {
-			delete_playing(playing[i].source.id);
+			delete_playing(playing[i].id);
 		}
 	}
 }
@@ -42,7 +67,7 @@ void Audio::delete_playing(ALuint id) {
 	int index = iter->second;
 	Playing_Audio &index_ref = playing[index];
 	Playing_Audio &last_ref = playing[playing.size() - 1];
-	playing_map[last_ref.source.id] = index; //We're swapping the indices, so we need to swap in the map as well.
+	playing_map[last_ref.id] = index; //We're swapping the indices, so we need to swap in the map as well.
 	std::swap(index_ref, last_ref);
 	playing.pop_back();
 	playing_map.erase(id);
@@ -59,7 +84,7 @@ void Audio::delete_component(Entity entity) {
 	System<Audio_Source>::delete_component(entity);
 }
 
-Audio::Audio(bool disable_output) : device(nullptr), context(nullptr) {
+Audio::Audio(bool disable_output) : device(nullptr), context(nullptr), listener(ENTITY_NULL) {
 	channel_volumes.resize(SOUND_CHANNEL_COUNT);
 	for (int i = 0; i < SOUND_CHANNEL_COUNT; ++i)
 		channel_volumes[i] = 0.5f;
@@ -84,51 +109,6 @@ void Audio::initialize() {
 	if (!alcMakeContextCurrent(context)) {
 		Engine::fail("Unable to create sound context");
 	}
-
-	{	//Test...
-		ALuint source;
-
-
-		alGenSources((ALuint)1, &source);
-		// check for errors
-
-		alSourcef(source, AL_PITCH, 1.0f);
-		// check for errors
-		alSourcef(source, AL_GAIN, 1.0f);
-		// check for errors
-		alSource3f(source, AL_POSITION, 10.0f, 0.0f, 0.0f);
-		// check for errors
-		alSource3f(source, AL_VELOCITY, 0.0f, 0.0f, 0.0f);
-		// check for errors
-		alSourcei(source, AL_LOOPING, AL_FALSE);
-		// check for errros
-
-		ALuint buffer = load_sound("blah");
-		alSourcei(source, AL_BUFFER, buffer);
-
-		alSourcePlay(source);
-		alSourcei(source, AL_LOOPING, 1);
-		//alGenBuffers((ALuint)1, &buffer);
-		_sleep(200);
-		set_volume(SOUND_CHANNEL_MASTER, 0.4f);
-		_sleep(200);
-		set_volume(SOUND_CHANNEL_MASTER, 0.3f);
-		_sleep(200);
-		set_volume(SOUND_CHANNEL_MASTER, 0.2f);
-		_sleep(200);
-		alSourceStop(source);
-	}
-}
-
-void Audio::update() {
-	ALfloat orientation[] = { 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f };
-
-	alListener3f(AL_POSITION, 0.0f, 0.0f, 1.0f);
-	// check for errors
-	alListener3f(AL_VELOCITY, 0.0f, 0.0f, 0.0f);
-	// check for errors
-	alListenerfv(AL_ORIENTATION, orientation);
-	// check for errors
 }
 
 ALuint Audio::load_sound(char * name) {
@@ -148,7 +128,7 @@ ALuint Audio::load_sound(char * name) {
 
 		int16_t *samples = new int16_t[size];
 		for (uint32_t i = 0; i < size; ++i) {
-			samples[i] = 32760.f * sin((2.f*3.14159f*frequency) / (float)sample_rate * i);
+			samples[i] = static_cast<int16_t>(32760.f * sin((2.f*3.14159f*frequency) / static_cast<float>(sample_rate) * i));
 		}
 
 		alBufferData(buffer, AL_FORMAT_MONO16, samples, size, sample_rate);
@@ -194,9 +174,7 @@ ALuint Audio::create_audio_source(Sound_Channel channel, bool loop, char* sound_
 }
 
 ALCdevice* Audio::choose_device() {
-	ALboolean can_enumerate_devices;
-
-	can_enumerate_devices = alcIsExtensionPresent(nullptr, "ALC_ENUMERATION_EXT");
+	const ALboolean can_enumerate_devices = alcIsExtensionPresent(nullptr, "ALC_ENUMERATION_EXT");
 	if (can_enumerate_devices == AL_FALSE) {
 		ALCdevice* dev = alcOpenDevice(nullptr);
 		if (!dev) {

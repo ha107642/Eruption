@@ -6,22 +6,28 @@
 
 Camera* Camera_System::add_component(Entity entity) {
 	Camera* c = System<Camera>::add_component(entity);
-	engine->set_main_camera(entity, c);
+	engine->set_main_camera(entity);
 	return c;
 }
 
 void Camera_System::set_state(System_State state) {
 	System<Camera>::set_state(state);
 	if (components.size() > 0)
-		engine->set_main_camera(components[0].entity, &components[0].component);
+		engine->set_main_camera(components[0].entity);
 }
 
 void Camera_System::update(Camera * const camera, Entity entity, Time & time) { 
 	const float easing_speed = 10.f;
+	
+	const float old_zoom = camera->zoom;
 	if (glm::abs(camera->zoom - camera->target_zoom) < 0.01f)
 		camera->zoom = camera->target_zoom;
 	else
 		camera->zoom = glm::mix(camera->zoom, camera->target_zoom, time.delta_time * easing_speed);
+	
+	const float zoom_diff = camera->zoom - old_zoom;
+	Transform* transform = engine->get_component<Transform>(entity);
+	transform->position -= transform->rotation * glm::UP * zoom_diff; //TODO: why does forward not work here!?
 }
 
 void Camera_System::serialize(Memory_Stream & stream, Camera & component, Entity entity) {

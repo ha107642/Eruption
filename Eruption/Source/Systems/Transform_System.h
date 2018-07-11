@@ -1,6 +1,7 @@
 #pragma once
 
 #include "System.h"
+#include <GLM_Constants.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>

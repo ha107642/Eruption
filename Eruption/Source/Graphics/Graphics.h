@@ -29,8 +29,7 @@ private:
 
 	std::vector<Model*> models; //TODO: Make contiguous (if needed?).
 	std::vector<Model*> model_instances;
-	Camera* camera;
-	glm::mat4 camera_matrix;
+	Entity camera_entity;
 
 	VkExtent2D extent;
 	int graphics_family_index;
@@ -150,7 +149,6 @@ public:
 	void load_texture(Model* model, const char * texture_name);
 	void set_model_instances(const std::vector<Model*> model_instances) { this->model_instances = model_instances; }
 
-	const glm::mat4& get_camera_matrix() { return camera_matrix; }
-	void set_main_camera(Camera* camera);
+	void set_main_camera(const Entity camera_entity);
 	void draw(Time& time);
 };

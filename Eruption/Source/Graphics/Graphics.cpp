@@ -39,7 +39,7 @@ Graphics::Graphics() {
 	image_count = 2;
 
 	window = nullptr;
-	camera = nullptr;
+	camera_entity = ENTITY_NULL;
 	instance = VK_NULL_HANDLE;
 	surface = VK_NULL_HANDLE;
 	physical_device = VK_NULL_HANDLE;
@@ -697,7 +697,7 @@ void Graphics::initialize_buffers() {
 	}
 
 	{
-		VkDeviceSize buffer_size = sizeof(Model_View_Projection);
+		VkDeviceSize buffer_size = sizeof(glm::mat4);
 		uniform_buffer.initialize(this, buffer_size);
 		uniform_buffer.initialize_staging_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		uniform_buffer.initialize_buffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -773,7 +773,7 @@ void Graphics::update_buffer_descriptor_sets() {
 	VkDescriptorBufferInfo buffer_info = {};
 	buffer_info.buffer = uniform_buffer.buffer;
 	buffer_info.offset = 0;
-	buffer_info.range = sizeof(Model_View_Projection);
+	buffer_info.range = sizeof(glm::mat4);
 
 	VkDescriptorBufferInfo dynamic_info = {};
 	dynamic_info.buffer = dynamic_buffer.buffer;
@@ -1635,32 +1635,34 @@ void Graphics::update_dynamic_buffer(void * data, VkDeviceSize size) {
 	dynamic_buffer.copy_staging_data();
 }
 
-void Graphics::set_main_camera(Camera* camera) {
-	this->camera = camera;
+void Graphics::set_main_camera(const Entity camera_entity) {
+	this->camera_entity = camera_entity;
 }
 
 void Graphics::draw(Time& time) {
 	assert(_is_initialized);
 
-	if (!camera) return;
+	if (!camera_entity) return;
 
 	{
-		assert(camera != nullptr);
-		Entity camera_entity = engine->get_system<Camera>()->get_entity(camera);
-		Transform* camera_transform = get_component<Transform>(camera_entity);
-		glm::vec3 pos = camera_transform->position;
-		pos.y -= camera->zoom;
-		pos.z += camera->zoom;
+		//const Camera* camera = get_component<Camera>(camera_entity);
+		//pos.y -= camera->zoom;
+		//pos.z += camera->zoom;
 
-		Model_View_Projection mvp = {};
-		mvp.model = glm::rotate(mvp.model, 0.f, glm::vec3(0.0f, 0.0f, 1.0f));
-		mvp.view = glm::lookAt(pos, pos - glm::vec3(0.0f, -1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		mvp.projection = glm::perspective(glm::radians(45.0f), (float)extent.width / (float)extent.height, 0.1f, 100.0f);
-		mvp.projection[1][1] *= -1;
+		//TODO: Store projection matrix in the camera component?
+		glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)extent.width / (float)extent.height, 0.1f, 100.0f);
+		projection[1][1] *= -1;
+		
+		const Transform* camera_transform = get_component<Transform>(camera_entity);
+		const glm::vec3 pos = glm::vec3(-camera_transform->position.x, -camera_transform->position.y, camera_transform->position.z);
+		const glm::mat4 scale = glm::scale(camera_transform->scale);
+		const glm::mat4 rotation = glm::toMat4(camera_transform->rotation);
+		const glm::mat4 translation = glm::translate(pos);
 
-		camera_matrix = mvp.projection * mvp.view * mvp.model;
+		glm::mat4 camera_matrix = projection * rotation * translation * scale;
 		uniform_buffer.fill_staging_buffer(&camera_matrix, sizeof(camera_matrix));
 		uniform_buffer.copy_staging_data();
+
 		//update_command_buffers();
 	}
 

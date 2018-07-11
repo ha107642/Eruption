@@ -91,7 +91,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;GLM_ENABLE_EXPERIMENTAL;GLM_FORCE_CTOR_INIT;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(VisualStudioDir)\Libraries\glfw-3.2.1.bin.WIN32\include;$(VisualStudioDir)\Libraries\glm;$(VisualStudioDir)\Libraries\enet-1.3.13\include;$(VisualStudioDir)\Libraries\openal-1.1\include;$(ProjectDir)ThirdParty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -147,7 +147,7 @@ for %%f in ($(ProjectDir)shaders\*.vert) do (
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;GLM_ENABLE_EXPERIMENTAL;GLM_FORCE_CTOR_INIT;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(VULKAN_SDK)\Include;$(VisualStudioDir)\Libraries\glfw-3.2.1.bin.WIN32\include;$(VisualStudioDir)\Libraries\glm;$(VisualStudioDir)\Libraries\enet-1.3.13\include;$(VisualStudioDir)\Libraries\openal-1.1\include;$(ProjectDir)ThirdParty;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -236,6 +236,7 @@ for %%f in ($(ProjectDir)shaders\*.vert) do (
   <ItemGroup>
     <ClInclude Include="Source\Aligned_Array.h" />
     <ClInclude Include="Source\Debugging\DebugWindow.h" />
+    <ClInclude Include="Source\GLM_Constants.h" />
     <ClInclude Include="Source\Graphics\Buffer.h" />
     <ClInclude Include="Source\System_Reference.h" />
     <ClInclude Include="Source\Systems\Camera.h" />

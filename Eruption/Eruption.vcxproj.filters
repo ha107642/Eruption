@@ -209,7 +209,10 @@
     <ClInclude Include="Source\Debugging\DebugWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-	<ClInclude Include="Source\System_Reference.h">
+    <ClInclude Include="Source\System_Reference.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\GLM_Constants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

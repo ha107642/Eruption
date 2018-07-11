@@ -29,9 +29,9 @@ struct Audio_Source {
 };
 
 struct Playing_Audio {
-	Audio_Source source;
+	ALuint id;
+	Entity entity;
 	float end_time;
-	Component_Reference<Transform> transform;
 };
 
 class Audio : public System<Audio_Source> {
@@ -40,7 +40,8 @@ protected:
 	ALCcontext *context;
 	std::unordered_map<char*, ALuint> buffers;
 	std::vector<float> channel_volumes;
-	
+	Entity listener;
+
 	std::vector<Playing_Audio> playing;
 	std::unordered_map<ALuint, int> playing_map;
 	
@@ -51,7 +52,7 @@ public:
 	Audio(bool server);
 	~Audio();
 
-	void update();
+	void set_listener_entity(Entity entity) { listener = entity; }
 	ALuint load_sound(char* name);
 	void unload_sound(char* name);
 	void set_volume(Sound_Channel channel, float volume);
