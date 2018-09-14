@@ -76,8 +76,8 @@ void init_some_stuff(Engine& engine, Transform_System &movement, Renderer &rende
 	hv->angular.z = 2.f;
 	hv->linear.x = 2.f;
 
-	Hitbox* hb = add_component<Hitbox>(house);
-	hb->half_size = glm::vec3(1.f, 1.f, 1.f);
+	Rigidbody* rb = add_component<Rigidbody>(house);
+	rb->mass = 100.f;
 
 	house2 = engine.new_entity();
 	ht = engine.add_component<Transform>(house2);
@@ -117,8 +117,7 @@ void init_some_stuff(Engine& engine, Transform_System &movement, Renderer &rende
 		gr->model->name = "ground_zx";
 	}
 
-	Hitbox* hb2 = add_component<Hitbox>(ground);
-	hb2->half_size = glm::vec3(100.f, 100.f, 1.f);
+	Rigidbody* hb2 = add_component<Rigidbody>(ground);
 }
 
 void do_some_stuff(Engine& engine, Transform_System &movement, Renderer &renderer, Time &time, Graphics *graphics = nullptr) {

@@ -2,25 +2,36 @@
 
 #include "System.h"
 #include "Movement.h"
+#include "../Motion_State.h"
 
 #include <glm/glm.hpp>
+#include <btBulletCollisionCommon.h>
+#include <btBulletDynamicsCommon.h>
 
-struct Hitbox {
-	glm::vec3 position;
-	glm::vec3 half_size;
+struct Rigidbody {
+	btRigidBody* body;
+	btCollisionShape* shape;
+	Motion_State* motion_state;
+	float mass;
 };
 
-class Physics : public System<Hitbox> {
+class Physics : public System<Rigidbody> {
 private:
-	float gravity = .982f;
-	System_Reference<Hitbox, Velocity> velocities;
-	System_Reference<Hitbox, Transform> transforms;
+	///collision configuration contains default setup for memory, collision setup. Advanced users can create their own configuration.
+	btDefaultCollisionConfiguration collision_configuration;
+	///use the default collision dispatcher. For parallel processing you can use a diffent dispatcher (see Extras/BulletMultiThreaded)
+	btCollisionDispatcher dispatcher;
+	///btDbvtBroadphase is a good general purpose broadphase. You can also try out btAxis3Sweep.
+	btBroadphaseInterface* overlapping_pair_cache;
+	///the default constraint solver. For parallel processing you can use a different solver (see Extras/BulletMultiThreaded)
+	btSequentialImpulseConstraintSolver solver;
+	btDiscreteDynamicsWorld dynamics_world;
 
-	void update(Hitbox* const component, Entity entity, Time& time, Velocity& velocity);
 public:
-	Physics() : velocities(*this), transforms(*this) {}
+	Physics();
+	~Physics();
 
-	void set_axis(glm::vec3 collision_data, Velocity* velocity);
 	void update(Time& time) override;
-	bool Physics::resolve_collision(const int i1, const int i2, glm::vec3* collision_data);
+	Rigidbody * Physics::add_component(Entity entity) override;
+	Rigidbody * Physics::add_component(const Entity entity, const Transform& transform, btCollisionShape* collider, const float mass);
 };
