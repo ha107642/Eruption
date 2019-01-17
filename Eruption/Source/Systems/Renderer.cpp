@@ -7,13 +7,12 @@
 
 void Renderer::update_offsets() {
 	int size = components.size();
-	std::vector<Model*> model_instances(components.size());
+	std::unordered_map<Model*, uint32_t> model_instances_map(components.size());
 	for (int i = 0; i < size; ++i) {
-		//render_data[i].offset = i * sizeof(Transform_Matrix);
-		model_instances[i] = components[i].component.model;
+		++model_instances_map[components[i].component.model];
 	}
 
-	graphics->set_model_instances(model_instances);
+	graphics->set_model_instances(model_instances_map);
 	update_command_buffers = false;
 }
 

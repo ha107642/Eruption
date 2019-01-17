@@ -27,6 +27,9 @@ void destroy_debug_report_callback(VkInstance instance, VkDebugReportCallbackEXT
 
 std::vector<const char*> device_extensions{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
+
+const int INSTANCE_BUFFER_BIND_ID = 1;
+
 void check_vk_result(VkResult err) {
 	if (err == 0) return;
 	printf("VkResult %d\n", err);
@@ -580,7 +583,9 @@ void Graphics::update_command_buffer(int i) {
 	//-- https://www.khronos.org/registry/vulkan/specs/1.0/html/vkspec.html#commandbuffer-allocation
 	//vkResetCommandBuffer(command_buffers[i], VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT); 
 
+	Debugging::Timing_Data& ttttt = Debugging::timing_start("wait idle");
 	vkQueueWaitIdle(graphics_queue);
+	Debugging::timing_stop(ttttt);
 
 	VkCommandBufferBeginInfo begin_info = {};
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -609,23 +614,31 @@ void Graphics::update_command_buffer(int i) {
 	//vkCmdPushConstants(command_buffers[i], pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mvp), &mvp);
 
 	VkBuffer vertex_buffers[] = { vertex_buffer.buffer };
+	VkBuffer instance_buffers[] = { instance_buffer.buffer };
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(command_buffers[i], 0, 1, vertex_buffers, offsets);
-	vkCmdBindIndexBuffer(command_buffers[i], index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindVertexBuffers(command_buffers[i], INSTANCE_BUFFER_BIND_ID, 1, instance_buffers, offsets);
 
+	vkCmdBindIndexBuffer(command_buffers[i], index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 	
+	Debugging::Timing_Data& timing = Debugging::timing_start("cmd buffers2");
+
 	std::vector<VkDescriptorSet> descriptor_sets;
 	descriptor_sets.resize(2);
 	descriptor_sets[0] = descriptor_set;
-	for (uint32_t j = 0; j < model_instances.size(); ++j) {
-		uint32_t offset = j * dynamic_buffer_alignment;
-
-		descriptor_sets[1] = model_instances[j]->texture_descriptor_set;
-
-		const int descriptor_set_size = model_instances[j]->texture_descriptor_set == VK_NULL_HANDLE ? 1 : 2;
-		vkCmdBindDescriptorSets(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, descriptor_set_size, descriptor_sets.data(), 1, &offset);
-		vkCmdDrawIndexed(command_buffers[i], model_instances[j]->indices.size(), 1, model_instances[j]->index_offset, model_instances[j]->vertex_offset, 0);
+	int descriptor_set_size;
+	int instance_start_index = 0;
+	uint32_t model_count = 0;
+	for (std::pair<Model*, uint32_t> instance : model_instances) {
+		const Model* model = instance.first;
+		descriptor_sets[1] = model->texture_descriptor_set;
+		descriptor_set_size = model->texture_descriptor_set == VK_NULL_HANDLE ? 1 : 2;
+		
+		vkCmdBindDescriptorSets(command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, descriptor_set_size, descriptor_sets.data(), 0, nullptr);
+		vkCmdDrawIndexed(command_buffers[i], model->indices.size(), instance.second, model->index_offset, model->vertex_offset, instance_start_index);
+		instance_start_index += instance.second;
 	}
+	Debugging::timing_stop(timing);
 
 	Debugging::Timing_Data& timing2 = Debugging::timing_start("imgui draw");
 	ImDrawData* imgui_draw_data = ImGui::GetDrawData();
@@ -643,9 +656,9 @@ void Graphics::update_command_buffer(int i) {
 void Graphics::resize_dynamic_buffer(VkDeviceSize size) {
 	assert(descriptor_set != VK_NULL_HANDLE);
 	vkDeviceWaitIdle(device);
-	dynamic_buffer.initialize(this, size);
-	dynamic_buffer.initialize_staging_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	dynamic_buffer.initialize_buffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	instance_buffer.initialize(this, size);
+	instance_buffer.initialize_staging_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	instance_buffer.initialize_buffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_CACHED_BIT); //VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 	update_buffer_descriptor_sets();
 }
 
@@ -775,12 +788,12 @@ void Graphics::update_buffer_descriptor_sets() {
 	buffer_info.offset = 0;
 	buffer_info.range = sizeof(glm::mat4);
 
-	VkDescriptorBufferInfo dynamic_info = {};
-	dynamic_info.buffer = dynamic_buffer.buffer;
-	dynamic_info.offset = 0;
-	dynamic_info.range = sizeof(glm::mat4);
+	//VkDescriptorBufferInfo dynamic_info = {};
+	//dynamic_info.buffer = dynamic_buffer.buffer;
+	//dynamic_info.offset = 0;
+	//dynamic_info.range = sizeof(glm::mat4);
 
-	VkWriteDescriptorSet write_sets[2] = {};
+	VkWriteDescriptorSet write_sets[1] = {};
 	write_sets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	write_sets[0].dstSet = descriptor_set;
 	write_sets[0].dstBinding = 0;
@@ -789,15 +802,15 @@ void Graphics::update_buffer_descriptor_sets() {
 	write_sets[0].descriptorCount = 1;
 	write_sets[0].pBufferInfo = &buffer_info;
 
-	write_sets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	write_sets[1].dstSet = descriptor_set;
-	write_sets[1].dstBinding = 1;
-	write_sets[1].dstArrayElement = 0;
-	write_sets[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-	write_sets[1].descriptorCount = 1;
-	write_sets[1].pBufferInfo = &dynamic_info;
+	//write_sets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	//write_sets[1].dstSet = descriptor_set;
+	//write_sets[1].dstBinding = 1;
+	//write_sets[1].dstArrayElement = 0;
+	//write_sets[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+	//write_sets[1].descriptorCount = 1;
+	//write_sets[1].pBufferInfo = &dynamic_info;
 
-	vkUpdateDescriptorSets(device, 2, write_sets, 0, nullptr);
+	vkUpdateDescriptorSets(device, 1, write_sets, 0, nullptr);
 }
 
 void Graphics::initialize_texture_descriptor(Model* model) {
@@ -1187,16 +1200,17 @@ void Graphics::initialize_descriptor_set_layout() {
 		mvp_binding.descriptorCount = 1;
 		mvp_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-		VkDescriptorSetLayoutBinding transform_binding = {};
-		transform_binding.binding = 1;
-		transform_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-		transform_binding.descriptorCount = 1;
-		transform_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		//VkDescriptorSetLayoutBinding transform_binding = {};
+		//transform_binding.binding = 1;
+		//transform_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		//transform_binding.descriptorCount = 1;
+		//transform_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-		VkDescriptorSetLayoutBinding bindings[] = { mvp_binding, transform_binding };
+		//VkDescriptorSetLayoutBinding bindings[] = { mvp_binding, transform_binding };
+		VkDescriptorSetLayoutBinding bindings[] = { mvp_binding };
 		VkDescriptorSetLayoutCreateInfo create_info = {};
 		create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		create_info.bindingCount = 2;
+		create_info.bindingCount = 1;
 		create_info.pBindings = bindings;
 
 		if (vkCreateDescriptorSetLayout(device, &create_info, nullptr, &descriptor_set_layouts.scene) != VK_SUCCESS) {
@@ -1321,13 +1335,27 @@ void Graphics::initialize_pipeline() {
 		shader_stages[1] = fragment_create_info;
 	}
 
-	VkVertexInputBindingDescription binding_description = Vertex::get_binding_description();
+	VkVertexInputBindingDescription instance_binding_description = {};
+	instance_binding_description.binding = INSTANCE_BUFFER_BIND_ID;
+	instance_binding_description.stride = sizeof(glm::mat4);
+	instance_binding_description.inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
+	VkVertexInputBindingDescription binding_descriptions[2] = { Vertex::get_binding_description(), instance_binding_description };
+	
 	std::vector<VkVertexInputAttributeDescription> attribute_descriptions = Vertex::get_attribute_descriptions();
+	for (size_t i = 0; i < 4; i++)
+	{
+		VkVertexInputAttributeDescription instance_attribute_description;
+		instance_attribute_description.binding = INSTANCE_BUFFER_BIND_ID;
+		instance_attribute_description.location = 3 + i;
+		instance_attribute_description.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		instance_attribute_description.offset = i * 16;
+		attribute_descriptions.push_back(instance_attribute_description);
+	}
 
 	VkPipelineVertexInputStateCreateInfo vertex_input = {};
 	vertex_input.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertex_input.vertexBindingDescriptionCount = 1;
-	vertex_input.pVertexBindingDescriptions = &binding_description;
+	vertex_input.vertexBindingDescriptionCount = 2;
+	vertex_input.pVertexBindingDescriptions = binding_descriptions;
 	vertex_input.vertexAttributeDescriptionCount = attribute_descriptions.size();
 	vertex_input.pVertexAttributeDescriptions = attribute_descriptions.data();
 
@@ -1631,8 +1659,8 @@ void Graphics::resize(int width, int height) {
 }
 
 void Graphics::update_dynamic_buffer(void * data, VkDeviceSize size) {
-	dynamic_buffer.fill_staging_buffer(data, size);
-	dynamic_buffer.copy_staging_data();
+	instance_buffer.fill_staging_buffer(data, size); //TODO: Remove staging buffer...
+	instance_buffer.copy_staging_data();
 }
 
 void Graphics::set_main_camera(const Entity camera_entity) {
@@ -1737,7 +1765,8 @@ Graphics::~Graphics() {
 	if (depth_image) vkDestroyImage(device, depth_image, nullptr);
 	if (depth_image_memory) vkFreeMemory(device, depth_image_memory, nullptr);
 	if (depth_image_view) vkDestroyImageView(device, depth_image_view, nullptr);
-	dynamic_buffer.destroy();
+	//dynamic_buffer.destroy();
+	instance_buffer.destroy();
 
 	if (descriptor_pool) vkDestroyDescriptorPool(device, descriptor_pool, nullptr);
 	if (graphics_command_pool) vkDestroyCommandPool(device, graphics_command_pool, nullptr);

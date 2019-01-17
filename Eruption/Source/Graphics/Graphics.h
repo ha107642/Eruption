@@ -28,7 +28,8 @@ private:
 	bool _is_initialized;
 
 	std::vector<Model*> models; //TODO: Make contiguous (if needed?).
-	std::vector<Model*> model_instances;
+	//std::vector<Model*> model_instances;
+	std::unordered_map<Model*, uint32_t> model_instances;
 	Entity camera_entity;
 
 	VkExtent2D extent;
@@ -73,7 +74,8 @@ private:
 	Buffer vertex_buffer;
 	Buffer index_buffer;
 	Buffer uniform_buffer;
-	Buffer dynamic_buffer;
+	//Buffer dynamic_buffer;
+	Buffer instance_buffer;
 
 	//VkDeviceSize dynamic_buffer_size;
 
@@ -147,7 +149,7 @@ public:
 	void update_dynamic_buffer(void * data, VkDeviceSize size);
 	Model* load_model(const char* model_name);
 	void load_texture(Model* model, const char * texture_name);
-	void set_model_instances(const std::vector<Model*> model_instances) { this->model_instances = model_instances; }
+	void set_model_instances(const std::unordered_map<Model*, uint32_t> model_instances) { this->model_instances = model_instances; }
 
 	void set_main_camera(const Entity camera_entity);
 	void draw(Time& time);

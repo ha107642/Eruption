@@ -24,7 +24,7 @@ protected:
 public:
 	Renderer() : graphics(nullptr), aligned_transforms(0, 0), transforms(*this) { }
 	Renderer(Graphics* graphics) : graphics(graphics),
-		update_command_buffers(false), aligned_transforms(graphics->dynamic_buffer_alignment), transforms(*this) {
+		update_command_buffers(false), aligned_transforms(/*graphics->dynamic_buffer_alignment*/sizeof(glm::mat4)), transforms(*this) {
 		glfwSetWindowSizeCallback(graphics->window, window_resized);
 		graphics->initialize_buffers();
 		graphics->resize_dynamic_buffer(aligned_transforms.memory_capacity());
